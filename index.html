@@ -133,12 +133,10 @@
     </section>
 
     <section id="explorer" hidden>
-      <div id="definition-banner" class="definition-banner"></div>
       <div class="template-head">
-        <div>
-          <h2 id="tpl-title"></h2>
-          <p id="tpl-meta" class="muted"></p>
-          <p id="tpl-source" class="muted tpl-source"></p>
+        <div class="tpl-titlebox">
+          <h2 class="tpl-title"><span class="definition-tag">Definition</span><span id="tpl-title"></span><span id="tpl-info"></span></h2>
+          <p id="tpl-meta" class="tpl-meta"></p>
         </div>
         <nav class="tabs" role="tablist">
           <button role="tab" id="tab-tree" aria-selected="true" aria-controls="panel-tree">Tree</button>
@@ -146,16 +144,22 @@
         </nav>
       </div>
 
-      <div id="findings" class="findings" aria-label="Teaching highlights"></div>
+      <div class="findings-bar"><span class="findings-label">Highlight</span><div id="findings" class="findings" aria-label="Teaching highlights"></div></div>
 
       <div id="panel-tree" role="tabpanel" aria-labelledby="tab-tree" class="split">
         <div class="tree-pane">
           <div class="tree-tools">
-            <input id="tree-search" type="search" placeholder="Filter by name, at-code, code…" aria-label="Filter tree">
-            <label class="toggle"><input type="checkbox" id="show-structure"> Structural nodes</label>
-            <label class="toggle"><input type="checkbox" id="show-slots"> Slots</label>
-            <button class="btn small" id="expand-all" type="button">Expand all</button>
-            <button class="btn small" id="collapse-all" type="button">Collapse</button>
+            <input id="tree-search" type="search" placeholder="Filter by name or code…" aria-label="Filter tree">
+            <label class="switch"><input type="checkbox" id="show-tech"> <span>Technical details</span></label>
+            <details class="tree-more">
+              <summary aria-label="More view options"><span class="material-symbols-outlined" aria-hidden="true">tune</span></summary>
+              <div class="tree-more-menu">
+                <label class="toggle"><input type="checkbox" id="show-structure"> Show structural nodes (HISTORY, ITEM_TREE …)</label>
+                <label class="toggle"><input type="checkbox" id="show-slots"> Show slots</label>
+                <button class="btn small" id="expand-all" type="button"><span class="material-symbols-outlined" aria-hidden="true">unfold_more</span>Expand all</button>
+                <button class="btn small" id="collapse-all" type="button"><span class="material-symbols-outlined" aria-hidden="true">unfold_less</span>Collapse to archetypes</button>
+              </div>
+            </details>
           </div>
           <div id="active-filter" class="active-filter" hidden></div>
           <ul id="tree" class="tree" role="tree" aria-label="Template nodes"></ul>

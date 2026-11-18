@@ -55,6 +55,8 @@ Open an openEHR **Operational Template (OPT 1.4 XML)** to see the following. For
    - archetype bindings for nodes the template does not use
    - the **AQL path** of every node, plus an example AQL query, each with a copy button
 
+By default the tree is kept simple: each row shows an icon, the name, a plain data type (quantity, coded text …) and any SNOMED CT or LOINC codes. A flag appears only for the highlight you picked. The **Technical details** switch shows RM types, at-codes, occurrences and all flags. In the detail panel, RM facts, paths and AQL sit in a collapsed *Technical details* section. Template id, source, licence and the archetypes inside are in the ⓘ next to the title.
+
 Everything runs in the browser. The OPT is parsed locally with `DOMParser` and never uploaded.
 
 ## Live site

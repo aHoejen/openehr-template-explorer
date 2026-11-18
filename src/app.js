@@ -1,6 +1,7 @@
 // UI for the openEHR Template Explorer. No framework, no build step.
 import { parseOpt, formatOccurrences, formatRange, bindingsToCsv, aqlFor } from "./opt-parser.js";
 import { initExamples, showExample, showScenarios, scenarioForTemplate } from "./examples-view.js";
+import { infoButton } from "./info-pop.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -48,6 +49,7 @@ const state = {
   search: "",
   showStructure: false,
   showSlots: false,
+  tech: false,
   bindingsSort: { key: null, dir: 1 },
 };
 
@@ -170,52 +172,47 @@ function hideError() {
 function renderHeader() {
   const t = state.t;
   $("#tpl-title").textContent = t.concept || t.templateId;
-  const bits = [`template_id: ${t.templateId}`];
-  if (t.language) bits.push(`language: ${t.language}`);
-  bits.push(`${t.archetypes.length} archetype roots`, `${t.nodes.length} nodes`);
-  $("#tpl-meta").textContent = bits.join(" · ");
-  const sample = sampleList.find((x) => x.file === loadedSampleFor);
-  const srcLine = $("#tpl-source");
-  if (sample) {
-    srcLine.replaceChildren(
-      "Source: ",
-      sample.sourceUrl ? h("a", { href: sample.sourceUrl, target: "_blank", rel: "noopener noreferrer" }, sample.source) : sample.source,
-      ` · Licence: ${sample.licence}`,
-    );
-  } else {
-    srcLine.textContent = "Source: your own file, opened in this browser only.";
-  }
-  if (t.purpose) $("#tpl-meta").title = t.purpose;
+  const inside = t.nodes.filter((n) => n.kind === "archetype_root").length - 1;
+  const scenario = loadedSampleFor ? scenarioForTemplate(loadedSampleFor) : null;
+  $("#tpl-meta").replaceChildren(
+    `A template: what can be recorded, built from ${inside} archetype${inside === 1 ? "" : "s"}. No patient data.`,
+    ...(scenario ? [" ", h("a", { href: `#example=${scenario.id}` }, `See it used in Scenario ${scenario.scenario.number} →`)] : []),
+  );
+  $("#tpl-info").replaceChildren(infoButton("About this template", () => templateInfo(t, inside)));
   $("#bindings-count").textContent = t.bindings.length;
-  renderDefinitionBanner(t);
   document.title = `${t.concept || t.templateId} – Template explorer`;
 }
 
-/** Make clear the explorer shows a definition, not patient data; link to the matching scenario. */
-function renderDefinitionBanner(t) {
-  const roots = t.nodes.filter((n) => n.kind === "archetype_root");
-  const inside = roots.length - 1;
-  const scenario = loadedSampleFor ? scenarioForTemplate(loadedSampleFor) : null;
-  $("#definition-banner").replaceChildren(
-    h("span.definition-tag", "Definition"),
+/** The longer template facts, shown in the ⓘ popup next to the title. */
+function templateInfo(t, inside) {
+  const sample = sampleList.find((x) => x.file === loadedSampleFor);
+  const roots = t.nodes.filter((n) => n.kind === "archetype_root" && n !== t.root);
+  return [
     h(
-      "div",
-      h(
-        "p",
-        "This is a ",
-        h("strong", "template"),
-        `: it defines what can be recorded, as a ${t.root.rmType} built from ${inside} archetype${inside === 1 ? "" : "s"}. It holds no patient data. `,
-        "Each archetype root in the tree is marked with its archetype id.",
-      ),
-      scenario
-        ? h(
-            "p",
-            `Used in Scenario ${scenario.scenario.number}: ${scenario.title}. `,
-            h("a", { href: `#example=${scenario.id}` }, "Follow the data recorded with this template →"),
-          )
-        : null,
+      "p",
+      "A template is a ",
+      h("strong", "definition"),
+      `: it combines archetypes for one use and constrains them further. This one builds a ${t.root.rmType} from ${inside} archetype${inside === 1 ? "" : "s"}. It holds no patient data. Each puzzle-piece row in the tree is an archetype.`,
     ),
-  );
+    t.purpose && !/^not specified\.?$/i.test(t.purpose.trim()) ? h("p", h("strong", "Purpose: "), t.purpose) : null,
+    h(
+      "dl.info-dl",
+      h("dt", "Template id"),
+      h("dd", h("code", t.templateId)),
+      t.language ? [h("dt", "Language"), h("dd", t.language)] : null,
+      h("dt", "Size"),
+      h("dd", `${roots.length + 1} archetype roots, ${t.nodes.length} nodes, ${t.bindings.length} terminology bindings`),
+      h("dt", "Source"),
+      h(
+        "dd",
+        sample
+          ? [sample.sourceUrl ? h("a", { href: sample.sourceUrl, target: "_blank", rel: "noopener noreferrer" }, sample.source) : sample.source, ` · Licence: ${sample.licence}`]
+          : "Your own file, opened in this browser only.",
+      ),
+    ),
+    h("p", h("strong", "Archetypes inside")),
+    h("ul.info-archetypes", roots.map((r) => h("li", h("span", r.name), " ", h("code", shortArchetype(r.archetypeId))))),
+  ];
 }
 
 function renderFindings() {
@@ -224,13 +221,13 @@ function renderFindings() {
   const notInTemplate = f.unmatchedBindings;
   const chips = [
     { key: "bound", value: `${f.elementsBound}/${f.elements}`, label: `elements bound (${pct}%)`, tone: "ok" },
-    { key: "unbound", value: f.unboundElements.length, label: "elements without a binding", tone: f.unboundElements.length ? "warn" : "ok" },
-    { key: "localOnly", value: f.localOnlyValueSets.length, label: "local-only value sets", tone: f.localOnlyValueSets.length ? "warn" : "ok" },
-    { key: "partly", value: f.partlyBoundValueSets.length, label: "partly bound value sets", tone: f.partlyBoundValueSets.length ? "warn" : "ok", hideIfZero: true },
-    { key: "external", value: f.externalValueSets.length, label: "external terminology constraints", tone: "info", hideIfZero: true },
-    { key: "stamped", value: f.versionStamped, label: "version-stamped bindings", tone: f.versionStamped ? "warn" : "ok" },
-    { key: "removed", value: f.removed.length, label: "removed nodes", tone: "muted", hideIfZero: true },
-    { key: null, tab: "bindings", value: notInTemplate, label: "bindings for nodes not in this template", tone: "muted", hideIfZero: true },
+    { key: "unbound", value: f.unboundElements.length, label: "with no binding", tone: f.unboundElements.length ? "warn" : "ok" },
+    { key: "localOnly", value: f.localOnlyValueSets.length, label: "local codes only", tone: f.localOnlyValueSets.length ? "warn" : "ok" },
+    { key: "partly", value: f.partlyBoundValueSets.length, label: "partly bound", tone: f.partlyBoundValueSets.length ? "warn" : "ok", hideIfZero: true },
+    { key: "external", value: f.externalValueSets.length, label: "external value sets", tone: "info", hideIfZero: true },
+    { key: "stamped", value: f.versionStamped, label: "version-stamped", tone: f.versionStamped ? "warn" : "ok" },
+    { key: "removed", value: f.removed.length, label: "removed", tone: "muted", hideIfZero: true },
+    { key: null, tab: "bindings", value: notInTemplate, label: "bindings not used", tone: "muted", hideIfZero: true },
   ];
   const box = $("#findings");
   box.replaceChildren(
@@ -358,18 +355,54 @@ function renderItem(v, filtering) {
     h(
       "button.node",
       { type: "button", onclick: () => select(n.id) },
-      h("span.rm", { title: n.constraintType }, rmLabel(n)),
+      state.tech ? h("span.rm", { title: n.constraintType }, rmLabel(n)) : kindIcon(n),
       h("span.name", n.name),
-      n.kind === "archetype_root" ? h("span.code.arch", { title: n.archetypeId }, shortArchetype(n.archetypeId)) : n.nodeId ? h("span.code", n.nodeId) : null,
-      h("span.occ", { title: "occurrences" }, formatOccurrences(n.occurrences)),
-      typeSummary(n),
+      state.tech
+        ? [
+            n.kind === "archetype_root" ? h("span.code.arch", { title: n.archetypeId }, shortArchetype(n.archetypeId)) : n.nodeId ? h("span.code", n.nodeId) : null,
+            h("span.occ", { title: "occurrences" }, formatOccurrences(n.occurrences)),
+            typeSummary(n),
+          ]
+        : h("span.kind-label", plainKind(n)),
       bindingPills(n.bindings),
-      flags(n),
+      state.tech ? flags(n) : filterFlag(n),
     ),
   );
   li.append(row);
   if (hasKids && open) li.append(h("ul", { role: "group" }, v.kids.map((k) => renderItem(k, filtering))));
   return li;
+}
+
+const PLAIN_DV = {
+  DV_QUANTITY: "quantity", DV_CODED_TEXT: "coded text", DV_TEXT: "text", DV_COUNT: "count", DV_DATE_TIME: "date/time",
+  DV_DATE: "date", DV_TIME: "time", DV_ORDINAL: "ordinal", DV_SCALE: "scale", DV_BOOLEAN: "yes/no", DV_PROPORTION: "proportion",
+  DV_DURATION: "duration", DV_IDENTIFIER: "identifier", DV_MULTIMEDIA: "multimedia", DV_URI: "link", DV_EHR_URI: "link",
+  DV_PARSABLE: "parsable text", DV_INTERVAL: "interval",
+};
+const ROOT_ICON = { COMPOSITION: "description", SECTION: "folder" };
+
+/** Plain-language kind for the simple tree: the data type of an element, else the RM class. */
+function plainKind(n) {
+  if (n.kind === "element") return [...new Set(n.values.map((v) => PLAIN_DV[v.rmType] || v.rmType))].join(" or ");
+  if (n.kind === "slot") return "slot";
+  const rm = n.rmType.toLowerCase().replace(/_/g, " ");
+  return n.kind === "archetype_root" ? `${rm} archetype` : rm;
+}
+
+function kindIcon(n) {
+  const icon =
+    n.kind === "archetype_root" ? ROOT_ICON[n.rmType] || "extension" : n.kind === "element" ? "radio_button_unchecked" : n.kind === "slot" ? "input" : "folder_open";
+  return h("span.kind-icon.material-symbols-outlined", { "aria-hidden": "true", title: n.rmType }, icon);
+}
+
+/** In the simple tree, show a flag only for the highlight the user picked. */
+function filterFlag(n) {
+  if (!state.filter || state.filter === "bound") return null;
+  const f = flags(n);
+  if (!f) return null;
+  const want = { unbound: "unbound", localOnly: "local", partly: "local", external: "ext", stamped: "stamp", removed: "removed" }[state.filter];
+  for (const x of [...f.children]) if (!x.classList.contains(want)) x.remove();
+  return f.children.length ? f : null;
 }
 
 function rmLabel(n) {
@@ -477,24 +510,16 @@ function renderDetail(n) {
   const sections = [
     h(
       "div.detail-head",
-      h("span.rm.big", rmLabel(n)),
+      kindIcon(n),
       h("h3", n.name),
+      h("span.kind-label", plainKind(n)),
       n.templateName && n.templateName !== n.archetypeText ? h("span.tag", { title: "Renamed in the template" }, "renamed in template") : null,
       flags(n),
     ),
     n.description && n.description !== "@ internal @" ? h("p.desc", n.description) : null,
     n.comment ? h("p.desc.muted", n.comment) : null,
-    h("dl.facts", facts.map(([k, v]) => [h("dt", k), h("dd", v)])),
-    pathsSection(n, t),
     n.values.length ? h("section", h("h4", "Data value"), n.values.map((v) => dataValue(v, n))) : null,
     h("section", h("h4", "Terminology bindings on this node"), n.bindings.length ? bindingList(n.bindings) : h("p.muted", n.kind === "element" ? "None. This element has no term binding in its archetype." : "None.")),
-    n.attributeValues.length
-      ? h(
-          "section",
-          h("h4", "Other attribute constraints"),
-          n.attributeValues.map((a) => h("div.attr-block", h("div.attr-name", a.attribute), a.values.map((v) => dataValue(v, n)))),
-        )
-      : null,
     n.slot
       ? h(
           "section",
@@ -504,6 +529,20 @@ function renderDetail(n) {
           n.slot.excludes.length ? [h("p", "Excluded:"), h("ul.mono", n.slot.excludes.map((s) => h("li", s)))] : null,
         )
       : null,
+    h(
+      "details.tech-details",
+      { open: state.tech || null },
+      h("summary", "Technical details: RM, paths and AQL"),
+      h("dl.facts", facts.map(([k, v]) => [h("dt", k), h("dd", v)])),
+      pathsSection(n, t),
+      n.attributeValues.length
+        ? h(
+            "section",
+            h("h4", "Other attribute constraints"),
+            n.attributeValues.map((a) => h("div.attr-block", h("div.attr-name", a.attribute), a.values.map((v) => dataValue(v, n)))),
+          )
+        : null,
+    ),
   ];
   d.replaceChildren(...sections.filter(Boolean));
 }
@@ -803,6 +842,18 @@ function wire() {
       state.search = e.target.value;
       renderTree();
     }, 120);
+  });
+  try {
+    state.tech = localStorage.getItem("explorerTech") === "1";
+  } catch {}
+  $("#show-tech").checked = state.tech;
+  $("#show-tech").addEventListener("change", (e) => {
+    state.tech = e.target.checked;
+    try {
+      localStorage.setItem("explorerTech", state.tech ? "1" : "0");
+    } catch {}
+    renderTree();
+    if (state.selected) renderDetail(state.byId.get(state.selected));
   });
   $("#show-structure").addEventListener("change", (e) => {
     state.showStructure = e.target.checked;
