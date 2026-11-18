@@ -29,13 +29,14 @@ Three worked examples, each following real data from openEHR to FHIR:
 | Diagnosis | IPS Problem List (CKM) | Condition, IPS profile |
 | Allergy | IPS Allergies and Intolerances (CKM) | AllergyIntolerance, IPS profile |
 
-Each example is a walkthrough:
-- a **summary** of how many items keep their meaning, in four plain-language outcomes: *meaning kept automatically*, *translated by a simple rule*, *needs a mapping decision*, *meaning lost or weakened*. Click an outcome to filter;
-- a **list of data items** with a traffic-light icon each;
-- for the selected item, a **three-step journey**: *1 Recorded in openEHR* → *2 Meaning in SNOMED CT* → *3 Sent in FHIR*. It gives the plain value at each step, a "why this matters" note, and JSON and technical details (paths, code sources, *open in the template explorer*) on request;
-- a **live SNOMED CT check** of each concept (FSN, active status, edition) on a configurable FHIR terminology server. The default is `https://implementation-demo.snomedtools.org/snowstorm-lite/fhir`;
-- a **Sources** list naming where everything comes from: the template and archetypes (CKM or another repository, with licence), the openEHR specifications, the FHIR profiles, SNOMED CT and LOINC. It also states that the mapping was written for this demonstrator;
-- optionally, the **complete records side by side** (openEHR JSON, codes, FHIR JSON), highlighting the selected item.
+Each scenario is one side-by-side view:
+- a short **"Recorded data"** banner with the story. Its ⓘ popup holds the setting, who recorded it, the template, and the archetypes it contains;
+- a **summary** of outcomes (*meaning kept automatically*, *translated by a simple rule*, *needs a mapping decision*, *meaning lost or weakened*). Click one to filter; its ⓘ explains the four outcomes;
+- **three columns, one row per recorded item**, grouped by archetype: *Recorded in openEHR* → *Meaning in SNOMED CT* → *Sent in FHIR*. Each row shows the value as stored, the SNOMED CT concept (checked live: active or inactive), and what the FHIR message carries;
+- an **ⓘ on each row** that opens the full explanation: the verdict, how the value is stored, the FHIR binding or profile constraint, the "why this matters" note, and technical details (paths, codes, JSON snippets, *open in the template explorer*). The column headers have ⓘ popups too;
+- a **"Show the full JSON"** switch that turns the same three columns into the complete openEHR JSON, the code list and the FHIR JSON, with the selected item highlighted. Clicking a highlighted part selects that item.
+
+Rows can be selected with the mouse or the arrow keys. The popups close with Escape, and on phones they open as a bottom sheet.
 
 The examples live in `src/examples/*.js`. `test/examples.test.js` checks each one against its real template: every path exists, every local code is allowed, every "archetype binding" really is one, and every code appears in the linked FHIR element. The SNOMED CT codes were checked as active in the 2026-01-01 International Edition when written. The mappings are hand-written for teaching. openEHR has no single standard mapping to FHIR.
 

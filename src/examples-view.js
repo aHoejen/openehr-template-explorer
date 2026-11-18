@@ -3,6 +3,7 @@
 import { EXAMPLES, prepare, resolvePointer } from "./examples/index.js";
 import { renderJson, invert } from "./json-view.js";
 import { parseOpt } from "./opt-parser.js";
+import { infoButton, closeInfo } from "./info-pop.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -80,7 +81,7 @@ export function initExamples(opts) {
       localStorage.setItem("txServer", input.value.trim());
     } catch {}
     lookupCache.clear();
-    renderJourney();
+    renderRows();
     renderConcepts();
   });
   $("#tx-reset").addEventListener("click", () => {
@@ -89,19 +90,27 @@ export function initExamples(opts) {
       localStorage.removeItem("txServer");
     } catch {}
     lookupCache.clear();
-    renderJourney();
+    renderRows();
     renderConcepts();
   });
-  $("#item-list").addEventListener("keydown", (e) => {
-    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+  $("#sxs-rows").addEventListener("keydown", (e) => {
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
     e.preventDefault();
     const items = groupedLinks().flatMap((g) => g.items);
     const i = items.findIndex((l) => l.id === selected);
-    const next = items[Math.max(0, Math.min(items.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)))];
+    const to = e.key === "Home" ? 0 : e.key === "End" ? items.length - 1 : i + (e.key === "ArrowDown" ? 1 : -1);
+    const next = items[Math.max(0, Math.min(items.length - 1, to))];
     if (next) {
       select(next.id);
-      document.querySelector(`#item-list [data-id="${CSS.escape(next.id)}"]`)?.focus();
+      document.querySelector(`#sxs-rows [data-id="${CSS.escape(next.id)}"]`)?.focus();
     }
+  });
+  $("#json-toggle").addEventListener("change", (e) => {
+    const on = e.target.checked;
+    $("#sxs-rows").hidden = on;
+    $("#sxs-json").hidden = !on;
+    renderJsonSelected();
+    highlight(on);
   });
 }
 
@@ -182,20 +191,7 @@ export function showExample(id) {
   const nextLink = $("#next-scenario");
   nextLink.href = `#example=${next.id}`;
   nextLink.textContent = `Next scenario: ${next.title} →`;
-  fill(
-    $("#instance-banner"),
-    h("span.instance-tag", "Recorded data"),
-    h(
-      "div",
-      h("p.banner-story", current.story),
-      h(
-        "p.banner-meta",
-        `${current.scenario.setting} · recorded by ${current.scenario.recordedBy.toLowerCase()}, ${current.scenario.when} · one (fictional) patient. `,
-        `This record is one instance of the template ${templateLabel(current)}; below, follow each recorded item from the EHR into the FHIR message. `,
-        h("a", { href: `#sample=${encodeURIComponent(current.template)}` }, "See the full template (the definition)"),
-      ),
-    ),
-  );
+  renderBanner();
   fill(
     $("#example-sources"),
     current.sources.map((src) =>
@@ -207,23 +203,21 @@ export function showExample(id) {
     ),
   );
   fill($("#example-points"), ...current.points.map((p) => h("li", p)));
-  $("#openehr-title").textContent = current.openehrTitle;
-  $("#fhir-title").textContent = current.fhirTitle;
   fill($("#openehr-json"), renderJson(current.openehrJson, invert(current.openehrPointers), (id) => select(id, true)));
   fill($("#fhir-json"), renderJson(current.fhirJson, invert(current.fhirPointers), (id) => select(id, true)));
   currentTemplate = null;
+  closeInfo();
   renderSummary();
-  renderContext();
-  renderList();
-  renderJourney();
+  renderHead();
+  renderRows();
   renderConcepts();
+  renderJsonSelected();
   highlight(false);
   loadTemplate(current.template).then((t) => {
     if (!t || current.template !== raw.template) return;
     currentTemplate = t;
-    renderContext();
-    renderList();
-    renderJourney();
+    renderBanner();
+    renderRows();
   });
 }
 
@@ -264,51 +258,62 @@ function archetypeRoots() {
     });
 }
 
-function renderContext() {
-  const box = $("#items-context");
-  if (!currentTemplate) {
-    fill(box, h("h3", "Pick an item"), h("p.ctx-line.muted", `From template “${current.template}”…`));
-    return;
-  }
+/** Compact "Recorded data" banner; the details live behind an info icon. */
+function renderBanner() {
+  fill(
+    $("#instance-banner"),
+    h("span.instance-tag", "Recorded data"),
+    h("div.banner-body", h("p.banner-story", current.story)),
+    infoButton("About this record", recordInfo, "About this record and its template"),
+  );
+}
+
+function recordInfo() {
   const t = currentTemplate;
   const roots = archetypeRoots();
   const top = roots[0];
   const inside = roots.slice(1);
-  const usedInside = inside.filter((r) => r.used || current.links.some((l) => l.openehr.archetype === r.id));
-  const word = RM_WORD[top.rm] || top.rm.toLowerCase();
-
-  fill(box, 
-    h("h3", `Pick a recorded item`),
+  const usedInside = inside.filter((r) => r.used);
+  return [
+    h("p", "This is ", h("strong", "recorded data"), ": one instance, for one (fictional) patient."),
     h(
-      "p.ctx-line",
-      `These items were recorded in a ${word} built from the template `,
-      h("strong", `“${t.templateId}”`),
-      `. The template defines a ${top.rm} that contains `,
-      h("strong", `${inside.length} archetype${inside.length === 1 ? "" : "s"}`),
-      reused(inside),
-      usedInside.length < inside.length ? `. This example uses ${usedInside.length} of them.` : ".",
+      "dl.info-dl",
+      h("dt", "Setting"),
+      h("dd", current.scenario.setting),
+      h("dt", "Recorded by"),
+      h("dd", `${current.scenario.recordedBy}, ${current.scenario.when}`),
+      h("dt", "Template"),
+      h("dd", templateLabel(current), " ", h("a", { href: `#sample=${encodeURIComponent(current.template)}` }, "See the full template (the definition)")),
+      t && top
+        ? [
+            h("dt", "Archetypes"),
+            h(
+              "dd",
+              `The template defines a ${top.rm} that contains ${inside.length} archetype${inside.length === 1 ? "" : "s"}${reused(inside)}.`,
+              usedInside.length < inside.length ? ` This scenario uses ${usedInside.length} of them.` : "",
+            ),
+          ]
+        : null,
     ),
-    templateSourceLine(),
-    ...(top.rm === "SECTION" ? [h("p.ctx-line.muted", "A section template: in practice it is placed inside a composition, such as an International Patient Summary.")] : []),
-    h(
-      "details.ctx-archetypes",
-      h("summary", "Show the archetypes"),
-      h(
-        "ul",
-        h("li.root", rmBadge(top.rm), " ", h("span", top.name), h("code.small", top.id)),
-        inside.map((r) =>
-          h(
-            "li" + (r.used ? ".used" : ".unused") + (r.parent && r.parent.archetypeId !== top.id ? ".nested" : ""),
-            rmBadge(r.rm),
-            " ",
-            h("span", r.name),
-            r.used ? null : h("span.ctx-tag", "not in this example"),
-            h("code.small", r.id),
+    t && top?.rm === "SECTION" ? h("p.muted", "A section template: in practice it is placed inside a composition, such as an International Patient Summary.") : null,
+    t && top
+      ? h(
+          "ul.ctx-archetypes-list",
+          h("li", rmBadge(top.rm), " ", h("span", top.name), h("code.small", top.id)),
+          inside.map((r) =>
+            h(
+              "li" + (r.used ? ".used" : ".unused") + (r.parent && r.parent.archetypeId !== top.id ? ".nested" : ""),
+              rmBadge(r.rm),
+              " ",
+              h("span", r.name),
+              r.used ? null : h("span.ctx-tag", "not in this scenario"),
+              h("code.small", r.id),
+            ),
           ),
-        ),
-      ),
-    ),
-  );
+        )
+      : null,
+    templateSourceLine(),
+  ];
 }
 
 /** " (clinical_evidence.v1 is used twice)" when the template reuses an archetype. */
@@ -351,8 +356,8 @@ function renderSummary() {
               const vis = visibleLinks();
               if (!vis.some((l) => l.id === selected)) selected = vis[0]?.id ?? null;
               renderSummary();
-              renderList();
-              renderJourney();
+              renderRows();
+              renderJsonSelected();
               highlight(false);
             },
           },
@@ -362,7 +367,8 @@ function renderSummary() {
           o.label.toLowerCase(),
         ),
       ),
-    ...(filter ? [h("button.linklike", { type: "button", onclick: () => { filter = null; renderSummary(); renderList(); } }, "Show all")] : []),
+    ...(filter ? [h("button.linklike", { type: "button", onclick: () => { filter = null; renderSummary(); renderRows(); } }, "Show all")] : []),
+    infoButton("How meaning can travel", legendInfo, "What the four outcomes mean"),
   );
 }
 
@@ -381,43 +387,171 @@ function groupedLinks() {
   return groups;
 }
 
-function renderList() {
+const COLUMNS = {
+  openehr: { title: "Recorded in openEHR", sub: "the EHR", dot: "d-openehr" },
+  sct: { title: "Meaning in SNOMED CT", sub: "what it means", dot: "d-sct" },
+  fhir: { title: "Sent in FHIR", sub: "the message", dot: "d-fhir" },
+};
+
+function renderHead() {
+  const col = (key, info) =>
+    h(
+      "div.sxs-col-head.h-" + key,
+      h("span.dot." + COLUMNS[key].dot),
+      h("div", h("strong", COLUMNS[key].title), h("span.col-sub", COLUMNS[key].sub)),
+      infoButton(COLUMNS[key].title, info),
+    );
+  fill(
+    $("#sxs-head"),
+    col("openehr", () => [
+      h("p", "Each row is one item the clinician recorded, grouped by the archetype it comes from. The value is shown as it is stored."),
+      h("p", "Local codes (at-codes) only mean something inside their own archetype. Where the template uses a SNOMED CT value set, the SNOMED CT code itself is stored."),
+      h("p.muted", `Full JSON: ${current.openehrTitle}. Language, encoding and most archetype details are left out for readability.`),
+    ]),
+    h("div.sxs-arrow-head", { "aria-hidden": "true" }),
+    col("sct", () => [
+      h("p", "The SNOMED CT concept that carries the item's meaning, and where it comes from: the archetype's binding, the recorded value, or a choice made by the mapping."),
+      h("p", "Each concept is checked live on the terminology server (", h("code", readServer()), "). You can change the server at the bottom of the page."),
+    ]),
+    h("div.sxs-arrow-head", { "aria-hidden": "true" }),
+    col("fhir", () => [
+      h("p", `What arrives in the FHIR message (${current.fhirTitle}): the value, the FHIR element it goes into, and any other codes the message carries, such as a LOINC code a profile requires or one of FHIR's own codes.`),
+      h("p.muted", "FHIR R4. The mapping is written by hand for teaching: openEHR has no single standard mapping to FHIR. Real projects use mapping engines and agreed mapping specifications."),
+    ]),
+  );
+}
+
+function legendInfo() {
+  return h(
+    "ul.legend-list",
+    Object.entries(OUTCOMES).map(([k, o]) =>
+      h(
+        "li",
+        h("span.o-icon.o-" + k, { "aria-hidden": "true" }, o.icon),
+        h(
+          "div",
+          h("strong", o.label),
+          h("ul", Object.entries(HOW).filter(([, v]) => v.outcome === k).map(([, v]) => h("li", v.reason))),
+        ),
+      ),
+    ),
+  );
+}
+
+function renderRows() {
   const out = [];
+  const top = archetypeRoots()[0];
   for (const g of groupedLinks()) {
+    const nested = g.parent && !g.isTop && top && g.parent.archetypeId !== top.id;
     out.push(
       h(
-        "li.item-group" + (g.parent && !g.isTop && g.parent !== archetypeRoots()[0]?.node ? ".nested" : ""),
+        "div.sxs-group" + (nested ? ".nested" : ""),
         { role: "presentation", title: g.id },
         rmBadge(g.rm),
         " ",
         h("span", g.name),
         g.isTop ? h("span.group-note", " (the template's root)") : null,
-        g.parent && !g.isTop && g.parent.archetypeId !== archetypeRoots()[0]?.id ? h("span.group-note", ` inside ${g.parent.name}`) : null,
+        nested ? h("span.group-note", ` inside ${g.parent.name}`) : null,
       ),
     );
-    for (const l of g.items) {
-      const k = outcomeOf(l);
-      out.push(
-        h(
-          "li",
-          { role: "presentation" },
-          h(
-            "button.item.o-" + k,
-            {
-              type: "button",
-              role: "option",
-              "data-id": l.id,
-              "aria-selected": String(l.id === selected),
-              onclick: () => select(l.id),
-            },
-            h("span.o-icon", { title: OUTCOMES[k].label, "aria-label": OUTCOMES[k].label }, OUTCOMES[k].icon),
-            h("span.item-text", h("span.item-label", l.label), h("span.item-value", plainValue(l.value))),
-          ),
-        ),
-      );
-    }
+    for (const l of g.items) out.push(row(l));
   }
-  fill($("#item-list"), ...out);
+  if (!out.length) out.push(h("p.muted", "No items match this filter."));
+  fill($("#sxs-rows"), ...out);
+}
+
+/** One recorded item across the three columns. */
+function row(l) {
+  const k = outcomeOf(l);
+  const notUsed = (t) => t.source === "possible, not recorded";
+  const sct = l.terms.filter((t) => t.system === "SNOMED CT" && !notUsed(t));
+  const other = l.terms.filter((t) => t.system !== "SNOMED CT" && !notUsed(t));
+  const couldHave = l.terms.filter(notUsed);
+  const fhirPtrs = current.fhirPointers.get(l.id) || [];
+  const isSel = l.id === selected;
+
+  const stored = l.openehr.localCode
+    ? ["local code ", h("code", l.openehr.localCode)]
+    : l.how === "coded"
+      ? "SNOMED CT code recorded"
+      : l.how === "text"
+        ? "free text"
+        : l.how === "context"
+          ? "not recorded: from the context"
+          : null;
+
+  const sctCell = sct.length
+    ? sct.map((t) => miniConcept(t))
+    : l.how === "direct"
+      ? h("span.c-none", "not needed")
+      : l.how === "text"
+        ? h("span.c-none.bad", "no SNOMED CT code")
+        : other.some((t) => t.system === "FHIR")
+          ? h("span.c-none", "none: FHIR's own code instead")
+          : h("span.c-none", "none");
+
+  return h(
+    "div.sxs-row.o-" + k + (isSel ? ".selected" : ""),
+    {
+      role: "option",
+      tabindex: isSel ? "0" : "-1",
+      "aria-selected": String(isSel),
+      "data-id": l.id,
+      "data-links": l.id,
+      onclick: (e) => {
+        if (e.target.closest("a, button")) return;
+        select(l.id);
+      },
+    },
+    h(
+      "div.c-cell.c-openehr",
+      { "data-col": "openEHR" },
+      h(
+        "div.c-head",
+        h("span.o-icon", { title: OUTCOMES[k].label, "aria-label": OUTCOMES[k].label }, OUTCOMES[k].icon),
+        h("span.c-label", l.label),
+        infoButton(`${l.label}: ${OUTCOMES[k].label.toLowerCase()}`, () => itemInfo(l), `Explain how “${l.label}” travels`),
+      ),
+      h("div.c-value", plainValue(l.value)),
+      stored ? h("div.c-note", stored) : null,
+    ),
+    h("div.c-arrow", { "aria-hidden": "true" }, "→"),
+    h(
+      "div.c-cell.c-sct",
+      { "data-col": "SNOMED CT" },
+      sctCell,
+      couldHave.length ? h("div.c-could", h("span.c-could-label", "could have been used:"), couldHave.map((t) => miniConcept(t, true))) : null,
+    ),
+    h("div.c-arrow", { "aria-hidden": "true" }, "→"),
+    h(
+      "div.c-cell.c-fhir",
+      { "data-col": "FHIR" },
+      l.fhir
+        ? [
+            h("div.c-value", sentValue(l, fhirPtrs)),
+            h("code.c-el", l.fhir),
+            other.length ? h("div.c-codes", other.map((t) => miniConcept(t))) : null,
+            l.how === "text" && sentAsTextOnly(l) ? h("div.c-note.bad", "text only, no code") : null,
+            l.how === "text" && !sentAsTextOnly(l) ? h("div.c-note.bad", "code guessed from text") : null,
+          ]
+        : h("div.c-value.bad", "Not sent"),
+    ),
+  );
+}
+
+/** A compact code chip; SNOMED CT ones get a live active/inactive check. */
+function miniConcept(t, notUsed = false) {
+  const cls = t.system === "SNOMED CT" ? "sct" : t.system === "LOINC" ? "loinc" : "other";
+  const status = h("span.mini-live");
+  const el = h(
+    "span.mini" + (notUsed ? ".not-used" : ""),
+    h("span.pill." + cls, t.system === "SNOMED CT" ? "SCT" : t.system, " ", codeLink(t)),
+    " ",
+    h("span.mini-name", t.system === "FHIR" ? `(${t.display})` : t.display),
+    t.system === "SNOMED CT" ? status : null,
+  );
+  if (t.system === "SNOMED CT") lookup(t.code, status, true);
+  return el;
 }
 
 /** "Sitting (local at1001)" -> "Sitting": keep technical codes out of the list. */
@@ -430,11 +564,35 @@ function select(id, fromJson) {
   if (filter && !visibleLinks().some((l) => l.id === id)) {
     filter = null;
     renderSummary();
+    renderRows();
   }
-  renderList();
-  renderJourney();
+  for (const r of document.querySelectorAll("#sxs-rows .sxs-row")) {
+    const on = r.dataset.id === id;
+    r.classList.toggle("selected", on);
+    r.setAttribute("aria-selected", String(on));
+    r.tabIndex = on ? 0 : -1;
+  }
+  renderJsonSelected();
   highlight(true);
-  if (fromJson) $("#journey").scrollIntoView({ block: "nearest", behavior: "smooth" });
+  if (!fromJson) return;
+  const r = document.querySelector(`#sxs-rows [data-id="${CSS.escape(id)}"]`);
+  if (r && !$("#sxs-rows").hidden) r.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+/** In JSON mode, name the selected item above the panes. */
+function renderJsonSelected() {
+  const l = current?.links.find((x) => x.id === selected);
+  if (!l) return fill($("#json-selected"), h("span.muted", "Click a highlighted part of the JSON to select an item."));
+  const k = outcomeOf(l);
+  fill(
+    $("#json-selected"),
+    h("span.muted", "Selected: "),
+    h("span.o-icon.o-" + k, { "aria-hidden": "true" }, OUTCOMES[k].icon),
+    h("strong", l.label),
+    h("span.muted", ` · ${OUTCOMES[k].label.toLowerCase()}`),
+    infoButton(`${l.label}: ${OUTCOMES[k].label.toLowerCase()}`, () => itemInfo(l), `Explain how “${l.label}” travels`),
+    h("span.muted.json-hint", "Click any highlighted part of the JSON to select another item."),
+  );
 }
 
 // ------------------------------------------------------------------ journey (the selected item)
@@ -539,71 +697,20 @@ function storedNote(l) {
   return null;
 }
 
-function renderJourney() {
-  const box = $("#journey");
-  const l = current.links.find((x) => x.id === selected);
-  if (!l) return fill(box, h("p.muted", "No items match this filter."));
+/** Everything that explains one item: shown in its info popup. */
+function itemInfo(l) {
   const k = HOW[l.how].outcome;
   const notUsed = (t) => t.source === "possible, not recorded";
-  const sct = l.terms.filter((t) => t.system === "SNOMED CT" && !notUsed(t));
-  const other = l.terms.filter((t) => t.system !== "SNOMED CT" && !notUsed(t));
   const couldHave = l.terms.filter(notUsed);
-
-  const step1 = h(
-    "div.step.s-openehr",
-    h("div.step-head", h("span.step-no", "1"), h("div", h("h4", "Recorded in openEHR"), h("p.step-sub", "the EHR"))),
-    h("p.step-value", plainValue(l.value)),
-    storedNote(l) ? h("p.step-note", storedNote(l)) : null,
-    snippet(current.openehrJson, current.openehrPointers.get(l.id), "openEHR"),
-  );
-
-  const step2 = h(
-    "div.step.s-sct",
-    h("div.step-head", h("span.step-no", "2"), h("div", h("h4", "Meaning in SNOMED CT"), h("p.step-sub", "what it means"))),
-    sct.length
-      ? sct.map((t) => conceptCard(t, true))
-      : l.how === "direct"
-        ? h("p.step-value.muted", "Not needed: a date or a group carries no coded meaning.")
-        : l.how === "text"
-          ? sentAsTextOnly(l)
-            ? h("p.no-code", h("strong", "No SNOMED CT code is recorded or sent."), " Only the words travel; a receiving system has to guess what they mean.")
-            : h("p.no-code", h("strong", "No SNOMED CT code is recorded."), " FHIR needs one of its own codes here, so the words have to be interpreted to choose it.")
-          : other.some((t) => t.system === "FHIR")
-            ? h("p.step-value.muted", "No SNOMED CT concept is used here. FHIR uses one of its own codes instead (see step 3).")
-            : h("p.step-value.muted", "No SNOMED CT concept for this item."),
-    couldHave.length
-      ? h(
-          "div.could-have",
-          h("p.could-have-head", "Could have been used, but was not"),
-          h("p.step-note", "If the template had offered a coded list here, this concept could have carried the meaning:"),
-          couldHave.map((t) => conceptCard(t, true, true)),
-        )
-      : null,
-  );
-
   const fhirPtrs = current.fhirPointers.get(l.id) || [];
-  const step3 = h(
-    "div.step.s-fhir",
-    h("div.step-head", h("span.step-no", "3"), h("div", h("h4", "Sent in FHIR"), h("p.step-sub", "the message"))),
-    l.fhir ? [h("p.step-value", sentValue(l, fhirPtrs)), h("p.step-note", "as ", h("code", l.fhir)), fhirTextNote(l, fhirPtrs)] : h("p.step-value", "Not sent"),
+  return [
+    h("div.verdict.small.o-" + k, h("span.o-icon", { "aria-hidden": "true" }, OUTCOMES[k].icon), h("p", reasonFor(l))),
+    storedNote(l) ? h("p", h("strong", "Recorded: "), storedNote(l)) : null,
     l.fhir && l.fhirBinding ? bindingLine(l.fhirBinding) : null,
-    l.fhir && other.length
-      ? h(
-          "div.other-codes",
-          h("p.step-note", sct.length ? "Sent together with the SNOMED CT code:" : "Code in the message:"),
-          other.map((t) => conceptCard(t, false)),
-        )
+    fhirTextNote(l, fhirPtrs),
+    couldHave.length
+      ? h("p", h("strong", "Could have been used: "), codeList(couldHave), ". It is not in the record and not sent; the template would need to offer a coded list here.")
       : null,
-    fhirPtrs.length ? snippet(current.fhirJson, fhirPtrs, "FHIR") : null,
-  );
-
-  fill(box, 
-    h(
-      "div.verdict.o-" + k,
-      h("span.o-icon.big", { "aria-hidden": "true" }, OUTCOMES[k].icon),
-      h("div", h("h3", `${l.label}: ${OUTCOMES[k].label.toLowerCase()}`), h("p", reasonFor(l))),
-    ),
-    h("div.steps", step1, arrow(k), step2, arrow(k), step3),
     l.note ? h("div.why.o-" + k, h("h4", "Why this matters"), h("p", l.note)) : null,
     h(
       "details.tech",
@@ -618,15 +725,13 @@ function renderJourney() {
         h("dd", h("code", l.fhir ?? "–")),
         l.terms.length ? [h("dt", "Codes"), h("dd", l.terms.map((t) => h("div", `${t.system} ${t.code} – ${t.display} (${t.source})`)))] : null,
       ),
+      snippet(current.openehrJson, current.openehrPointers.get(l.id), "openEHR"),
+      fhirPtrs.length ? snippet(current.fhirJson, fhirPtrs, "FHIR") : null,
       l.openehr.path !== null
         ? h("button.btn.small", { type: "button", onclick: () => openInExplorer(current.template, l.openehr.archetype, l.openehr.path) }, "Open this node in the template explorer")
         : null,
     ),
-  );
-}
-
-function arrow(outcome) {
-  return h("div.arrow.o-" + outcome, { "aria-hidden": "true" }, h("span", "→"));
+  ];
 }
 
 /** True when FHIR receives only text (a CodeableConcept with text and no coding). */
@@ -728,21 +833,6 @@ function trim(v, depth = 0) {
   return v;
 }
 
-function conceptCard(t, live, notUsed = false) {
-  const cls = t.system === "SNOMED CT" ? "sct" : t.system === "LOINC" ? "loinc" : "other";
-  const status = h("div.live");
-  const card = h(
-    "div.concept.inline" + (notUsed ? ".not-used" : ""),
-    notUsed ? h("span.not-used-tag", "not in the record · not sent") : null,
-    h("div.concept-head", h("span.pill." + cls, t.system === "SNOMED CT" ? "SCT" : t.system), " ", codeLink(t)),
-    h("div.concept-name", t.system === "FHIR" ? `from FHIR code system “${t.display}”` : t.display),
-    notUsed ? null : h("div.concept-src", SOURCE_TEXT[t.source] || t.source),
-    live ? status : null,
-  );
-  if (live) lookup(t.code, status);
-  return card;
-}
-
 // ------------------------------------------------------------------ full records (below)
 
 function renderConcepts() {
@@ -779,13 +869,14 @@ function renderConcepts() {
 }
 
 function highlight(scroll) {
-  for (const el of document.querySelectorAll("#mode-examples .hl")) el.classList.remove("hl");
+  for (const el of document.querySelectorAll("#sxs-json .hl")) el.classList.remove("hl");
   if (!selected) return;
   const sel = `[data-links~="${CSS.escape(selected)}"]`;
+  const jsonOn = !$("#sxs-json").hidden;
   for (const pane of ["#openehr-json", "#fhir-json", "#concepts"]) {
     const els = document.querySelectorAll(`${pane} ${sel}`);
     for (const el of els) el.classList.add("hl");
-    if (scroll && els[0] && $("#full-records").open) scrollWithin($(pane), els[0]);
+    if (scroll && jsonOn && els[0]) scrollWithin($(pane), els[0]);
   }
 }
 
@@ -805,10 +896,10 @@ function codeLink(t) {
     : code;
 }
 
-async function lookup(code, target) {
+async function lookup(code, target, compact = false) {
   const server = readServer().replace(/\/+$/, "");
   const key = `${server}|${code}`;
-  fill(target, h("span.muted", "Checking terminology server…"));
+  fill(target, compact ? null : h("span.muted", "Checking terminology server…"));
   try {
     if (!lookupCache.has(key)) {
       lookupCache.set(
@@ -832,6 +923,10 @@ async function lookup(code, target) {
     const version = params.find((x) => x.name === "version")?.valueString || "";
     const edition = (version.match(/version\/(\d{8})/) || [])[1];
     const inactive = inactiveProp?.valueBoolean === true;
+    if (compact) {
+      fill(target, inactiveProp ? h("span.flag." + (inactive ? "unbound" : "ok"), { title: `${fsn || ""}${edition ? ` · edition ${edition}` : ""}` }, inactive ? "inactive" : "active") : null);
+      return;
+    }
     fill(target, 
       h("span.fsn", fsn || params.find((x) => x.name === "display")?.valueString || ""),
       " ",
@@ -840,6 +935,6 @@ async function lookup(code, target) {
     );
   } catch (e) {
     lookupCache.delete(key);
-    fill(target, h("span.muted", `Terminology server not reachable (${e.message}).`));
+    fill(target, compact ? h("span.muted", { title: `Terminology server not reachable (${e.message})` }, "?") : h("span.muted", `Terminology server not reachable (${e.message}).`));
   }
 }
