@@ -3,7 +3,7 @@
 import { EXAMPLES, prepare, resolvePointer } from "./examples/index.js";
 import { renderJson, invert } from "./json-view.js";
 import { parseOpt } from "./opt-parser.js";
-import { infoButton, closeInfo } from "./info-pop.js";
+import { infoButton, openInfo, closeInfo } from "./info-pop.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -73,6 +73,9 @@ let openInExplorer = () => {};
 
 export function initExamples(opts) {
   openInExplorer = opts.openInExplorer;
+  for (const b of document.querySelectorAll(".fm-card")) {
+    b.addEventListener("click", () => openInfo(b, FLOW_STEPS[b.dataset.step].title, flowStepInfo(b.dataset.step)));
+  }
   const input = $("#tx-server");
   input.value = readServer();
   $("#tx-form").addEventListener("submit", (e) => {
@@ -124,6 +127,54 @@ function readServer() {
 
 const outcomeOf = (l) => HOW[l.how].outcome;
 const visibleLinks = () => current.links.filter((l) => !filter || outcomeOf(l) === filter);
+
+/** The four steps of the "From definition to message" strip on the scenarios home. */
+const FLOW_STEPS = {
+  archetypes: {
+    title: "Archetypes: the definition of one clinical concept",
+    text: [
+      "An archetype is an agreed, reusable model of one clinical concept, such as Blood pressure or Problem/Diagnosis. It lists every data point the concept may need, with its data type, units and allowed values.",
+      "Archetypes can bind their nodes and values to terminologies such as SNOMED CT and LOINC. Shared archetypes are reviewed and published in the openEHR Clinical Knowledge Manager (CKM).",
+    ],
+    links: (ex) => ({ href: `#sample=${encodeURIComponent(ex.template)}`, text: `See the archetypes in the ${ex.title.toLowerCase()} template` }),
+    extra: { href: "https://ckm.openehr.org/ckm/", text: "Browse archetypes in the openEHR CKM", external: true },
+  },
+  template: {
+    title: "Template: archetypes combined for one use",
+    text: [
+      "A template puts archetypes together for one purpose, such as a vital signs chart or an IPS section. It can leave out what is not needed, rename items and narrow the allowed values.",
+      "Systems use the exported Operational Template (OPT). The template explorer opens an OPT and shows its tree, data types, coded values and terminology bindings. It holds no patient data.",
+    ],
+    links: (ex) => ({ href: `#sample=${encodeURIComponent(ex.template)}`, text: `Explore the ${ex.title.toLowerCase()} template` }),
+    extra: { href: "#explore", text: "Open your own OPT in the template explorer" },
+  },
+  instance: {
+    title: "Recorded data: an instance for one patient",
+    text: [
+      "When a clinician records something, the system stores it as an instance of the template: real values for one patient, at one time, by one person.",
+      "Each recorded item keeps its archetype path, and coded values keep their codes. That is what lets the meaning travel on. The clinical scenarios show recorded instances.",
+    ],
+    links: (ex) => ({ href: `#example=${ex.id}`, text: `Scenario ${ex.scenario.number}: ${ex.title}` }),
+  },
+  fhir: {
+    title: "FHIR message: the same data, sent on",
+    text: [
+      "To share the data with another system, it is turned into FHIR resources (here Observation, Condition and AllergyIntolerance). The FHIR profile sets the structure and, for some elements, which codes must be present.",
+      "SNOMED CT carries the clinical meaning from the record into the message. Each scenario shows, item by item, what is kept, translated, decided by the mapping, or lost.",
+    ],
+    links: (ex) => ({ href: `#example=${ex.id}`, text: `${ex.title}: sent as ${ex.fhirTitle}` }),
+  },
+};
+
+function flowStepInfo(step) {
+  const s = FLOW_STEPS[step];
+  const a = ({ href, text, external }) =>
+    h("a", { href, onclick: closeInfo, ...(external ? { target: "_blank", rel: "noopener" } : {}) }, text);
+  return [
+    s.text.map((t) => h("p", t)),
+    h("ul.flow-step-links", EXAMPLES.map((ex) => h("li", a(s.links(ex)))), s.extra && h("li", a(s.extra))),
+  ];
+}
 
 /** The scenarios home: what the scenarios are, before diving into one. */
 export function showScenarios() {
