@@ -1,0 +1,15 @@
+{
+  "name": "openehr-template-explorer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static web demonstrator for exploring openEHR Operational Templates (OPT 1.4) and their terminology bindings",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "start": "npx --yes serve -l 8080 ."
+  },
+  "devDependencies": {
+    "@xmldom/xmldom": "^0.9.8"
+  },
+  "license": "Apache-2.0"
+}

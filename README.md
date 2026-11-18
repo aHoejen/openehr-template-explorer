@@ -1,0 +1,99 @@
+# openEHR Template Explorer
+
+A small, static web demonstrator for training on **SNOMED CT and openEHR**.
+Open an openEHR **Operational Template (OPT 1.4 XML)** to see:
+
+1. **The node tree:** COMPOSITION → SECTION → ENTRY → CLUSTER → ELEMENT. Each node shows its RM type, at-code, archetype id (at archetype roots), name and occurrences.
+2. **Data values for each ELEMENT:** the data type (DV_QUANTITY, DV_CODED_TEXT, DV_ORDINAL, …), units, ranges and precision. Also the **allowed coded values**: local at-codes with their text, an external code list, or an external value-set reference (`referenceSetUri`, including FHIR `ValueSet/$expand` URLs with ECL).
+3. **Terminology bindings** (SNOMED CT, LOINC, …), shown next to the node or coded value they bind. A flat **Bindings** table (archetype, path, node/code, terminology, code) can be exported as CSV.
+4. **Teaching highlights:**
+   - elements with **no binding**
+   - coded value lists that are **local only**, or only partly bound
+   - old **`SNOMED-CT(2003)`-style version stamps**
+   - removed (0..0) nodes and slots
+   - archetype bindings for nodes the template does not use
+   - the **AQL path** of every node, plus an example AQL query, each with a copy button
+
+Everything runs in the browser. The OPT is parsed locally with `DOMParser` and never uploaded.
+
+## Run it
+
+It is a static site with no build step. ES modules need an HTTP server, so `file://` will not work:
+
+```bash
+python3 -m http.server 8080
+```
+
+Then open <http://localhost:8080>. Pick a sample from the menu, or drop your own `.opt` file onto the page.
+A sample can be linked directly, for example `http://localhost:8080/#sample=vital-signs-monitoring.opt`.
+
+`npm start` does the same with `npx serve`.
+
+### Getting OPT files
+
+- **Archetype Designer** (<https://tools.openehr.org/designer>): open or build a template, then *Export → OPT (1.4)*.
+- **CKM** (<https://ckm.openehr.org>): open a template, then *Export → Operational template*.
+
+## Tests
+
+The parser (`src/opt-parser.js`) is plain JavaScript that also runs in Node, using [`@xmldom/xmldom`](https://github.com/xmldom/xmldom) as the DOM.
+
+```bash
+npm install
+npm test
+```
+
+The tests check the bindings listed in the project brief against real OPTs. The values below come from the CKM archetypes:
+
+| Archetype | Node | Binding |
+|---|---|---|
+| blood_pressure.v2 | at0000, at0004, at0005, at0013 | SNOMED CT 364090009, 271649006, 271650006, 246153002, all stamped `SNOMED-CT(2003)` |
+| respiration.v2 | at0067 Sitting, at0069 Lying, at0004 Rate | 33586001, 40199007, 271625008 |
+| pulse_oximetry.v1 | at0006 SpO₂ | SNOMED CT 431314004 and LOINC 59408-5 |
+| body_temperature.v2 | at0004 Temperature | SNOMED CT 386725007 and `LNC205` 8310-5 |
+
+They also cover the edge cases in the synthetic `teaching-edge-cases.opt`.
+
+## How the parser reads an OPT 1.4
+
+- The root is `<template xmlns="http://schemas.openehr.org/v1">`. The parser reads `template_id/value`, `concept`, `language` and `description/details/purpose`.
+- `definition` is the root `C_ARCHETYPE_ROOT`. It is walked recursively through `attributes` (`C_SINGLE_ATTRIBUTE` / `C_MULTIPLE_ATTRIBUTE`) and `children`.
+- **Names come from the nearest enclosing `C_ARCHETYPE_ROOT`.** Each root carries its own `term_definitions` and `term_bindings`. A template-level rename (a `name` attribute constrained to one string) takes precedence over the archetype text.
+- Tree nodes are `C_ARCHETYPE_ROOT`, `ARCHETYPE_SLOT`, and `C_COMPLEX_OBJECT`s that are not data values. Data values (`DV_*`, `CODE_PHRASE`) under `ELEMENT.value` become the element's data constraints. Data values on other attributes (for example `COMPOSITION.category`) are listed as "other attribute constraints".
+- Coded values come from `C_CODE_PHRASE` (`terminology_id` + `code_list`), `C_CODE_REFERENCE` (`referenceSetUri`), `CONSTRAINT_REF` (ac-codes) and `C_DV_ORDINAL`.
+- Quantities come from `C_DV_QUANTITY`: `property` (an openEHR code) and `list` items (`units`, `magnitude`, `precision`).
+- **Binding targets:**
+  - `items code="atNNNN"` binds every node with that at-code inside the same archetype root, and every *local* coded value with that code. These are two different things: the node's meaning, and one value in its list.
+  - A path-style code such as `/data[at0001]/…/items[at0004]` binds the node at that archetype path.
+  - A binding whose target is not in the template is kept and listed as "not in this template".
+- **Binding forms** are normalised: `SNOMED-CT` + `364090009`, `SNOMED-CT(2003)` + `364090009`, `[SNOMED-CT(2003)::364090009]` and `http://snomed.info/id/364090009` are all read as the same binding. The version stamp is kept so it can be flagged.
+- **Paths** are AQL paths from the composition and from the nearest archetype root. Sibling clones that share an at-code get a name predicate: `items[at0011,'Left side']`.
+
+`src/openehr-terms.js` holds openEHR terminology rubrics, used for example to show that `openehr::125` means *Pressure*. It is generated from the openEHR [specifications-TERM](https://github.com/openEHR/specifications-TERM) XML by `scripts/build-openehr-terms.py`.
+
+## Project layout
+
+```
+index.html            page shell
+styles.css            styles (light and dark)
+src/opt-parser.js     OPT 1.4 parser + CSV/AQL helpers (browser + Node)
+src/app.js            UI: tree, detail panel, bindings table, CSV export
+src/openehr-terms.js  generated openEHR terminology rubrics
+samples/              sample OPTs (see samples/SOURCES.md)
+scripts/              generators for openehr-terms.js and the synthetic sample
+test/                 node:test unit tests
+```
+
+## Possible next steps
+
+- SNOMED CT lookup through a configurable FHIR terminology server (`CodeSystem/$lookup`), to show the FSN and active status of each bound code.
+- Web template (JSON) input.
+- ADL 2 / OPT2 input.
+- GitHub Pages hosting. This needs a public repository, or a GitHub plan that offers Pages for private repositories.
+
+## Licensing
+
+- Code: Apache License 2.0 (see `LICENSE`).
+- Archetypes and templates from the openEHR CKM are licensed **CC BY-SA 4.0** (some older ones 3.0). See `samples/SOURCES.md` for where each sample came from.
+- **SNOMED CT** codes appear for teaching. Using SNOMED CT needs an Affiliate licence from SNOMED International, or access through a Member country's National Release Centre.
+- **LOINC** codes are © Regenstrief Institute, Inc., used under the LOINC licence.

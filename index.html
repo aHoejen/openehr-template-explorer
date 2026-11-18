@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>openEHR Template Explorer</title>
+  <meta name="description" content="Explore an openEHR Operational Template (OPT 1.4): node tree, data types, coded values and terminology bindings.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23146c94'/%3E%3Cpath d='M9 9h6v6H9zM17 17h6v6h-6zM12 15v5h5' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="src/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>openEHR Template Explorer</h1>
+      <p class="tagline">Look inside an Operational Template: its nodes, data types, coded values and terminology bindings.</p>
+    </div>
+    <div class="loaders">
+      <label class="btn primary" for="file-input">Open OPT file…</label>
+      <input id="file-input" type="file" accept=".opt,.xml,application/xml,text/xml" hidden>
+      <label class="sample-picker">
+        <span>or try a sample</span>
+        <select id="sample-select" aria-label="Load a sample template">
+          <option value="">Choose…</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="welcome" class="welcome">
+      <div class="dropzone" id="dropzone">
+        <p class="drop-title">Drop an OPT 1.4 XML file here</p>
+        <p>Export one from Archetype Designer or download a template from CKM, or pick a sample above.
+          The file is parsed in your browser and is not uploaded anywhere.</p>
+      </div>
+      <ul class="what-you-see">
+        <li><strong>Tree</strong>: COMPOSITION → SECTION → ENTRY → CLUSTER → ELEMENT, showing RM type, at-code, occurrences and archetype roots.</li>
+        <li><strong>Data</strong>: each ELEMENT's data type, units and ranges, and its allowed codes (local at-codes or an external value set).</li>
+        <li><strong>Bindings</strong>: SNOMED CT, LOINC and other bindings on nodes and on coded values, in a table you can export as CSV.</li>
+        <li><strong>Teaching flags</strong>: unbound elements, local-only value sets, <code>SNOMED-CT(2003)</code>-style version stamps, and AQL paths you can copy.</li>
+      </ul>
+    </section>
+
+    <section id="explorer" hidden>
+      <div class="template-head">
+        <div>
+          <h2 id="tpl-title"></h2>
+          <p id="tpl-meta" class="muted"></p>
+        </div>
+        <nav class="tabs" role="tablist">
+          <button role="tab" id="tab-tree" aria-selected="true" aria-controls="panel-tree">Tree</button>
+          <button role="tab" id="tab-bindings" aria-selected="false" aria-controls="panel-bindings">Bindings <span class="count" id="bindings-count"></span></button>
+        </nav>
+      </div>
+
+      <div id="findings" class="findings" aria-label="Teaching highlights"></div>
+
+      <div id="panel-tree" role="tabpanel" aria-labelledby="tab-tree" class="split">
+        <div class="tree-pane">
+          <div class="tree-tools">
+            <input id="tree-search" type="search" placeholder="Filter by name, at-code, code…" aria-label="Filter tree">
+            <label class="toggle"><input type="checkbox" id="show-structure"> Structural nodes</label>
+            <label class="toggle"><input type="checkbox" id="show-slots"> Slots</label>
+            <button class="btn small" id="expand-all" type="button">Expand all</button>
+            <button class="btn small" id="collapse-all" type="button">Collapse</button>
+          </div>
+          <div id="active-filter" class="active-filter" hidden></div>
+          <ul id="tree" class="tree" role="tree" aria-label="Template nodes"></ul>
+        </div>
+        <aside id="detail" class="detail" aria-live="polite">
+          <p class="muted">Select a node to see its details.</p>
+        </aside>
+      </div>
+
+      <div id="panel-bindings" role="tabpanel" aria-labelledby="tab-bindings" hidden>
+        <div class="table-tools">
+          <input id="bindings-search" type="search" placeholder="Filter bindings…" aria-label="Filter bindings">
+          <select id="bindings-terminology" aria-label="Terminology"></select>
+          <label class="toggle"><input type="checkbox" id="bindings-hide-unmatched"> Hide bindings for nodes not in this template</label>
+          <button class="btn" id="export-csv" type="button">Export CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table id="bindings-table" class="data-table">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div id="error" class="error" role="alert" hidden></div>
+  </main>
+
+  <footer class="footer">
+    <p>Static demonstrator for openEHR + SNOMED CT training. OPT 1.4 XML only.
+      SNOMED CT codes are shown for education; using SNOMED CT needs an Affiliate or national licence.</p>
+  </footer>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>
