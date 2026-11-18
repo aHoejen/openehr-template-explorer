@@ -480,3 +480,59 @@ table.mini th { font-weight: 600; color: var(--muted); font-size: 11.5px; }
 .not-used-tag { display: inline-block; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--o-lost); margin-bottom: 2px; }
 
 .step-value.muted { font-size: 13.5px; font-weight: 500; }
+
+/* ---------------------------------------------------------------- FHIR binding strength */
+.binding-line { margin: 8px 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; }
+.binding-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.binding-line .step-note { margin: 4px 0 0; }
+.strength { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 1px 7px; border-radius: 4px; }
+.st-fixed, .st-required { color: var(--o-lost); background: var(--o-lost-bg); }
+.st-extensible { color: var(--o-dec); background: var(--o-dec-bg); }
+.st-preferred { color: var(--o-rule); background: var(--o-rule-bg); }
+.st-example, .st-none { color: var(--muted); background: var(--surface-2); }
+
+/* ---------------------------------------------------------------- scenarios home */
+.home-title { font-size: 22px; margin: 4px 0 6px; }
+.home-intro { font-size: 15px; max-width: 900px; margin: 0 0 16px; }
+.flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 28px; row-gap: 10px; position: relative; margin-bottom: 18px; }
+.flow-arrow { display: none; }
+.flow-box { position: relative; display: flex; flex-direction: column; gap: 3px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; font-size: 13px; }
+.flow-box:not(:nth-last-of-type(1))::after { content: "→"; position: absolute; right: -21px; top: 50%; transform: translateY(-50%); color: var(--muted); font-weight: 700; }
+.flow-box strong { font-size: 15px; }
+.flow-kind { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; }
+.f-def { border-top: 4px solid var(--c-openehr); }
+.f-inst { border: 2px solid var(--c-openehr); background: color-mix(in srgb, var(--c-openehr) 8%, var(--surface)); }
+.f-inst .flow-kind { color: var(--c-openehr); }
+.f-msg { border-top: 4px solid var(--c-fhir); }
+.flow-sct { grid-column: 1 / -1; background: var(--sct-bg); border-radius: 8px; padding: 8px 12px; font-size: 13px; border-left: 4px solid var(--c-sct); }
+.flow-sct strong { color: var(--c-sct); }
+.scenario-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+.scenario-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; }
+.scenario-card h3 { font-size: 18px; margin: 0 0 2px; }
+.sc-number { margin: 0; font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
+.sc-setting { margin: 0; font-weight: 600; }
+.sc-meta { margin: 2px 0 8px; font-size: 12.5px; color: var(--muted); }
+.sc-label { margin: 8px 0 2px; font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.sc-recorded { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; }
+.sc-template, .sc-exchange { margin: 0; font-size: 13.5px; }
+.sc-open { margin-top: auto; align-self: flex-start; text-decoration: none; }
+.scenario-card .sc-open { margin-top: 14px; }
+.home-layers { margin-top: 4px; }
+
+/* ---------------------------------------------------------------- scenario detail top */
+.detail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
+.back-link { font-weight: 500; text-decoration: none; }
+.instance-banner { display: flex; gap: 12px; align-items: flex-start; background: color-mix(in srgb, var(--c-openehr) 8%, var(--surface)); border: 2px solid var(--c-openehr); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 12px; }
+.instance-banner p { margin: 0; }
+.instance-tag { flex: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #fff; background: var(--c-openehr); border-radius: 4px; padding: 3px 7px; margin-top: 1px; }
+@media (prefers-color-scheme: dark) { .instance-tag { color: #08202c; } }
+
+@media (max-width: 1000px) {
+  .flow { grid-template-columns: minmax(0, 1fr); }
+  .flow-box:not(:nth-last-of-type(1))::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -21px; transform: translateX(-50%); }
+  .flow { row-gap: 24px; }
+  .flow-sct { margin-top: -8px; }
+  .scenario-cards { grid-template-columns: minmax(0, 1fr); }
+}
+.flow-box.f-msg::after { content: none !important; }
+@media (max-width: 760px) { .instance-banner { flex-direction: column; gap: 6px; } }

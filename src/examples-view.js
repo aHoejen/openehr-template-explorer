@@ -121,7 +121,41 @@ function readServer() {
 const outcomeOf = (l) => HOW[l.how].outcome;
 const visibleLinks = () => current.links.filter((l) => !filter || outcomeOf(l) === filter);
 
+/** The scenarios home: what the scenarios are, before diving into one. */
+export function showScenarios() {
+  $("#scenarios-home").hidden = false;
+  $("#scenario-detail").hidden = true;
+  fill(
+    $("#scenario-cards"),
+    EXAMPLES.map((ex) =>
+      h(
+        "article.scenario-card",
+        h("p.sc-number", `Scenario ${ex.scenario.number}`),
+        h("h3", ex.title),
+        h("p.sc-setting", ex.scenario.setting),
+        h("p.sc-meta", `Recorded by: ${ex.scenario.recordedBy} · ${ex.scenario.when}`),
+        h("p.sc-label", "What was recorded"),
+        h("ul.sc-recorded", ex.scenario.recorded.map((r) => h("li", r))),
+        h("p.sc-label", "Recorded with template"),
+        h("p.sc-template", templateLabel(ex)),
+        h("p.sc-label", "Then"),
+        h("p.sc-exchange", ex.scenario.exchange),
+        h("a.btn.primary.sc-open", { href: `#example=${ex.id}` }, "Open this scenario →"),
+      ),
+    ),
+  );
+  window.scrollTo(0, 0);
+}
+
+function templateLabel(ex) {
+  const src = ex.sources.find((x) => x.role === "openEHR template");
+  const m = src?.text.match(/“([^”]+)”/);
+  return m ? `“${m[1]}”` : ex.template;
+}
+
 export function showExample(id) {
+  $("#scenarios-home").hidden = true;
+  $("#scenario-detail").hidden = false;
   const raw = EXAMPLES.find((e) => e.id === id) || EXAMPLES[0];
   current = prepare(raw);
   filter = null;
@@ -130,6 +164,18 @@ export function showExample(id) {
   if (!location.hash.includes(`example=${current.id}`)) history.replaceState(null, "", `#example=${current.id}`);
 
   $("#example-story").textContent = current.story;
+  fill($("#scenario-count"), `Scenario ${current.scenario.number} of ${EXAMPLES.length}`);
+  fill(
+    $("#instance-banner"),
+    h("span.instance-tag", "Recorded data"),
+    h(
+      "p",
+      "You are looking at what was ",
+      h("strong", "recorded"),
+      ` for one (fictional) patient. Setting: ${current.scenario.setting}. Recorded by: ${current.scenario.recordedBy}, ${current.scenario.when}. `,
+      `This record is one instance of the template ${templateLabel(current)}. Below, follow each recorded item from the EHR into the FHIR message.`,
+    ),
+  );
   fill(
     $("#example-sources"),
     current.sources.map((src) =>
@@ -212,12 +258,12 @@ function renderContext() {
   const word = RM_WORD[top.rm] || top.rm.toLowerCase();
 
   fill(box, 
-    h("h3", `Pick an item from this ${word}`),
+    h("h3", `Pick a recorded item`),
     h(
       "p.ctx-line",
-      "Template ",
+      `These items were recorded in a ${word} built from the template `,
       h("strong", `“${t.templateId}”`),
-      ` builds a ${top.rm} that contains `,
+      `. The template defines a ${top.rm} that contains `,
       h("strong", `${inside.length} archetype${inside.length === 1 ? "" : "s"}`),
       reused(inside),
       usedInside.length < inside.length ? `. This example uses ${usedInside.length} of them.` : ".",
@@ -399,19 +445,25 @@ function reasonFor(l) {
         (fhirOnly.length ? ` The FHIR profile also requires ${codeList(fhirOnly)}, which the archetype does not provide; the mapping adds it.` : "")
       );
     case "coded":
-      return `${cap(templateName())} only accepts SNOMED CT codes for ${item}, from the same value set the FHIR profile uses. The recorded code is sent unchanged.`;
+      return `${cap(templateName())} only accepts SNOMED CT codes for ${item}, from the same value set the FHIR IPS profile prefers. The recorded code is sent unchanged.`;
     case "direct":
       return `${item} has the same kind of value in openEHR and in FHIR, so it is copied across as it is.`;
     case "context":
       return `Nobody records ${item} as data. FHIR needs it, so the mapping fills it in from ${l.openehr.path === null ? "the patient's EHR that holds this record" : templateName()}.`;
     case "fhir-code":
-      return `${cap(arch)} records ${item} with local codes (at-codes). FHIR only accepts its own fixed codes here, so a small lookup table translates each local code.`;
+      return `${cap(arch)} records ${item} with local codes (at-codes). FHIR requires its own codes for this element (a required binding), so a small, fixed lookup table translates each local code.`;
     case "mapped":
-      return l.openehr.localCode
-        ? `${cap(arch)} uses local codes (at-codes) for ${item} and has no SNOMED CT binding for them. To send it in FHIR, someone had to choose a SNOMED CT concept. Another system could choose a different one.`
-        : `${cap(arch)} has no terminology binding for ${item}. The mapping supplies the codes for the FHIR message. Another system could choose different ones.`;
+      if (l.openehr.localCode) {
+        return `${cap(arch)} uses local codes (at-codes) for ${item}, with no SNOMED CT binding. A local code such as ${l.openehr.localCode} means nothing outside this archetype, so it can't be sent as it is. ${bindingClause(l.fhirBinding)} Someone had to choose the SNOMED CT concept, and another system could choose a different one.`;
+      }
+      if (l.fhirBinding?.strength === "fixed") {
+        return `${cap(arch)} has no terminology binding for ${item}. The FHIR profile fixes the LOINC code, so that part is decided by FHIR. The SNOMED CT code is optional and was chosen by the mapping; another system could choose a different one or leave it out.`;
+      }
+      return `${cap(arch)} has no terminology binding for ${item}. ${bindingClause(l.fhirBinding)} The mapping supplies the codes, and another system could choose different ones.`;
     case "text":
-      return `${cap(templateName())} only allows free text for ${item}, so the record holds just the words, with no SNOMED CT code. The FHIR message can pass on the words, but not a reliable code.`;
+      return `${cap(templateName())} only allows free text for ${item}, so the record holds just the words, with no SNOMED CT code. ${
+        l.fhirBinding?.strength === "required" ? "FHIR requires one of its own codes here, so the words have to be interpreted." : "The FHIR message can pass on the words, but not a reliable code."
+      }`;
     case "none":
       return `FHIR ${fhirResourceType()} has no standard element for ${item}. The value stays in the openEHR record and is not sent.`;
     default:
@@ -422,6 +474,33 @@ function reasonFor(l) {
 function fhirResourceType() {
   const j = current.fhirJson;
   return j.resourceType === "Bundle" ? j.entry?.[0]?.resource?.resourceType || "Bundle" : j.resourceType;
+}
+
+/** FHIR binding strengths in plain words. */
+export const STRENGTH = {
+  fixed: { label: "Fixed by the profile", text: "The FHIR profile fixes this exact code." },
+  required: { label: "Required", text: "Only codes from this value set are allowed." },
+  extensible: { label: "Extensible", text: "Codes from this value set must be used when one fits." },
+  preferred: { label: "Preferred", text: "Codes from this value set are recommended, but other codes are allowed." },
+  example: { label: "Example only", text: "The value set is only a suggestion: any code system is allowed." },
+  none: { label: "No binding", text: "FHIR does not say which codes to use here." },
+};
+
+/** Why a SNOMED CT concept was needed, given the FHIR binding of the target element. */
+function bindingClause(b) {
+  switch (b?.strength) {
+    case "none":
+      return "FHIR itself does not require SNOMED CT here: the FHIR element has no terminology binding. SNOMED CT is used because it is the shared clinical terminology the receiver can understand.";
+    case "example":
+      return "FHIR only suggests SNOMED CT here (an example binding), so using it is a convention, not a FHIR rule.";
+    case "preferred":
+      return "FHIR recommends SNOMED CT here (a preferred binding), but does not require it.";
+    case "required":
+    case "extensible":
+      return `FHIR requires its own codes here (${b.strength} binding).`;
+    default:
+      return "";
+  }
 }
 
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -483,6 +562,7 @@ function renderJourney() {
     "div.step.s-fhir",
     h("div.step-head", h("span.step-no", "3"), h("div", h("h4", "Sent in FHIR"), h("p.step-sub", "the message"))),
     l.fhir ? [h("p.step-value", sentValue(l, fhirPtrs)), h("p.step-note", "as ", h("code", l.fhir)), fhirTextNote(l, fhirPtrs)] : h("p.step-value", "Not sent"),
+    l.fhir && l.fhirBinding ? bindingLine(l.fhirBinding) : null,
     l.fhir && other.length
       ? h(
           "div.other-codes",
@@ -539,6 +619,16 @@ function sentAsTextOnly(l) {
 function sentValue(l, pointers) {
   const v = fhirSummary(pointers) || "–";
   return sentAsTextOnly(l) ? `“${v}”` : v;
+}
+
+function bindingLine(b) {
+  const st = STRENGTH[b.strength] || { label: b.strength, text: "" };
+  return h(
+    "div.binding-line",
+    h("span.binding-label", "FHIR binding: "),
+    h("span.strength.st-" + b.strength, { title: st.text }, st.label),
+    h("p.step-note", b.url ? h("a", { href: b.url, target: "_blank", rel: "noopener noreferrer" }, b.name) : b.name, b.strength === "none" ? "." : `. ${st.text}`),
+  );
 }
 
 /** For free-text items: say plainly whether FHIR gets only text, or a code guessed from the text. */

@@ -21,6 +21,19 @@ for (const raw of EXAMPLES) {
       for (const s of ex.sources) if (s.url) assert.match(s.url, /^https:\/\//);
     });
 
+    test("scenario intro is complete", () => {
+      for (const k of ["number", "setting", "recordedBy", "when", "recorded", "exchange"]) assert.ok(ex.scenario?.[k], k);
+    });
+
+    test("every item states the FHIR binding of its target element", () => {
+      const strengths = new Set(["fixed", "required", "extensible", "preferred", "example", "none"]);
+      for (const l of ex.links) {
+        assert.ok(l.fhirBinding, `${l.id} has fhirBinding`);
+        assert.ok(strengths.has(l.fhirBinding.strength), `${l.id}: ${l.fhirBinding.strength}`);
+        if (l.how === "fhir-code") assert.equal(l.fhirBinding.strength, "required", `${l.id}: FHIR's own code implies a required binding`);
+      }
+    });
+
     test("link ids are unique and every link has a known 'how'", () => {
       const ids = ex.links.map((l) => l.id);
       assert.equal(new Set(ids).size, ids.length);

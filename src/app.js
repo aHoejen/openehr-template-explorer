@@ -1,6 +1,6 @@
 // UI for the openEHR Template Explorer. No framework, no build step.
 import { parseOpt, formatOccurrences, formatRange, bindingsToCsv, aqlFor } from "./opt-parser.js";
-import { initExamples, showExample } from "./examples-view.js";
+import { initExamples, showExample, showScenarios } from "./examples-view.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -91,7 +91,7 @@ function setMode(mode) {
   $("#loaders").hidden = mode !== "explore";
   $("#mode-link-examples").setAttribute("aria-current", String(mode === "examples"));
   $("#mode-link-explore").setAttribute("aria-current", String(mode === "explore"));
-  if (mode === "examples") document.title = "openEHR, SNOMED CT and FHIR: worked examples";
+  if (mode === "examples") document.title = "openEHR, SNOMED CT and FHIR: clinical scenarios";
   else if (state.t) document.title = `${state.t.concept || state.t.templateId} – openEHR Template Explorer`;
   else document.title = "openEHR Template Explorer";
 }
@@ -104,9 +104,13 @@ async function route() {
     await loadSample(sample);
   } else if (params.has("explore") || params.has("sample")) {
     setMode("explore");
-  } else {
+  } else if (params.get("example")) {
     setMode("examples");
     showExample(params.get("example"));
+    window.scrollTo(0, 0);
+  } else {
+    setMode("examples");
+    showScenarios();
   }
 }
 

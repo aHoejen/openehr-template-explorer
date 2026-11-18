@@ -8,6 +8,12 @@ A static web demonstrator for teaching how **openEHR, FHIR and SNOMED CT** fit t
 
 It has two modes.
 
+## Clinical scenarios
+
+The start page introduces three **clinical scenarios**: things a clinician recorded for one fictional patient. A short diagram explains the difference between *definitions* (archetypes, templates), the *recorded data* (an instance, which is what the scenarios show) and the *FHIR message*. Each scenario card says who recorded what, when, with which template, and what was sent.
+
+Opening a scenario shows a "Recorded data" banner, followed by the walkthrough described below. For every item, step 3 also shows the **FHIR binding** of the target element: fixed by the profile, required, extensible, preferred, example only, or none. This makes clear when FHIR actually demands a code system and when SNOMED CT is a choice made by the mapping. The bindings were checked against the FHIR R4 and IPS 2.0.1 StructureDefinitions.
+
 ## Worked examples
 
 Three worked examples, each following real data from openEHR to FHIR:

@@ -16,7 +16,7 @@
       <p class="tagline">How openEHR, SNOMED CT and FHIR fit together, from recording to exchange.</p>
     </div>
     <nav class="modes" aria-label="Mode">
-      <a href="#example=vital-signs" id="mode-link-examples">Worked examples</a>
+      <a href="#scenarios" id="mode-link-examples">Clinical scenarios</a>
       <a href="#explore" id="mode-link-explore">Template explorer</a>
     </nav>
     <div class="loaders" id="loaders">
@@ -33,7 +33,25 @@
 
   <main id="main">
     <section id="mode-examples" hidden>
-      <div class="layers" aria-label="The three standards">
+      <section id="scenarios-home">
+        <h2 class="home-title">Three clinical scenarios</h2>
+        <p class="home-intro">Each scenario is something a clinician <strong>recorded</strong> for one patient (fictional) in an openEHR-based EHR.
+          You follow that recorded data, one item at a time, from the EHR into a FHIR message, and see where SNOMED CT keeps the meaning the same.</p>
+
+        <div class="flow" aria-label="From definitions to recorded data to message">
+          <div class="flow-box f-def"><span class="flow-kind">Definition</span><strong>Archetypes</strong><span>Reusable models of one clinical concept, such as blood pressure. Agreed internationally in CKM.</span></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-box f-def"><span class="flow-kind">Definition</span><strong>Template</strong><span>Combines archetypes for one use, like a form: which items, which code lists.</span></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-box f-inst"><span class="flow-kind">Instance · what the scenarios show</span><strong>Recorded data</strong><span>What a clinician actually entered for one patient, stored as a composition.</span></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-box f-msg"><span class="flow-kind">Exchange</span><strong>FHIR message</strong><span>The same recorded data, sent to another system.</span></div>
+          <div class="flow-sct"><strong>SNOMED CT</strong> carries the meaning along the way: bound to archetype items, chosen from value sets in the template, or recorded as the value itself.</div>
+        </div>
+
+        <div id="scenario-cards" class="scenario-cards"></div>
+
+      <div class="layers home-layers" aria-label="The three standards">
         <div class="layer l-openehr">
           <h2>openEHR</h2>
           <p class="layer-role">the EHR</p>
@@ -51,6 +69,14 @@
         </div>
       </div>
 
+      </section>
+
+      <section id="scenario-detail" hidden>
+      <div class="detail-top">
+        <a href="#scenarios" class="back-link">← All scenarios</a>
+        <span id="scenario-count" class="muted"></span>
+      </div>
+      <div id="instance-banner" class="instance-banner"></div>
       <nav id="example-tabs" class="example-tabs" role="tablist" aria-label="Examples"></nav>
       <p id="example-story" class="story"></p>
 
@@ -95,6 +121,8 @@
         </div>
         <p class="pane-sub">Click any highlighted part to select that item.</p>
       </details>
+
+      </section>
 
       <details class="settings">
         <summary>Terminology server</summary>

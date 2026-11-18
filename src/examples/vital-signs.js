@@ -147,7 +147,7 @@ const fhir = {
 // How each data item travels. `how` values are explained in the legend (examples-view.js).
 const links = [
   {
-    id: "bp", group: "Blood pressure", label: "Blood pressure (the whole observation)",
+    id: "bp", fhirBinding: {"strength": "fixed", "name": "LOINC 85354-9 is fixed by the FHIR bp profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Blood pressure", label: "Blood pressure (the whole observation)",
     openehr: { archetype: BP, path: "/" }, value: "OBSERVATION blood_pressure.v2",
     terms: [
       { system: "SNOMED CT", code: "364090009", display: "Systemic arterial pressure", source: "archetype binding" },
@@ -157,7 +157,7 @@ const links = [
     note: "The archetype binds the whole observation to SNOMED CT (written SNOMED-CT(2003) in the file). FHIR's vital-signs profile also requires the LOINC panel code, which is not in the archetype. The mapping has to add it.",
   },
   {
-    id: "bp-sys", group: "Blood pressure", label: "Systolic",
+    id: "bp-sys", fhirBinding: {"strength": "fixed", "name": "LOINC 8480-6 is fixed by the FHIR bp profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Blood pressure", label: "Systolic",
     openehr: { archetype: BP, path: "/data[at0001]/events[at0006]/data[at0003]/items[at0004]" }, value: "148 mm[Hg]",
     terms: [
       { system: "SNOMED CT", code: "271649006", display: "Systolic blood pressure", source: "archetype binding" },
@@ -167,7 +167,7 @@ const links = [
     note: "Same meaning in both: the SNOMED CT binding on at0004 becomes a coding on the component. Both standards use UCUM units, so mm[Hg] needs no conversion. The 2003 version stamp is dropped: FHIR identifies SNOMED CT by the system http://snomed.info/sct.",
   },
   {
-    id: "bp-dia", group: "Blood pressure", label: "Diastolic",
+    id: "bp-dia", fhirBinding: {"strength": "fixed", "name": "LOINC 8462-4 is fixed by the FHIR bp profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Blood pressure", label: "Diastolic",
     openehr: { archetype: BP, path: "/data[at0001]/events[at0006]/data[at0003]/items[at0005]" }, value: "92 mm[Hg]",
     terms: [
       { system: "SNOMED CT", code: "271650006", display: "Diastolic blood pressure", source: "archetype binding" },
@@ -176,28 +176,28 @@ const links = [
     fhir: "Observation.component[1]", how: "bound",
   },
   {
-    id: "bp-position", group: "Blood pressure", label: "Position",
+    id: "bp-position", fhirBinding: {"strength": "none", "name": "The observation-bodyPosition extension has no terminology binding: any code system is allowed", "url": "https://hl7.org/fhir/extensions/StructureDefinition-observation-bodyPosition.html"}, group: "Blood pressure", label: "Position",
     openehr: { archetype: BP, path: "/data[at0001]/events[at0006]/state[at0007]/items[at0008]", localCode: "at1001" }, value: "Sitting (local at1001)",
     terms: [{ system: "SNOMED CT", code: "33586001", display: "Sitting position", source: "mapping" }],
     fhir: "Observation.extension (bodyPosition)", how: "mapped",
-    note: "Blood pressure's position list uses local codes only, with no bindings. The FHIR bodyPosition extension needs a SNOMED CT code, so someone has to choose one. Here the recording system stores that choice with the data as a TERM_MAPPING. The respiration archetype binds its own 'Sitting' to the same concept.",
+    note: "Blood pressure's position list uses local codes only, with no bindings. FHIR does not force a code system here: the bodyPosition extension has no binding. But 'at1001' means nothing outside the archetype, so a shared code is needed for the receiver to understand it, and SNOMED CT is the natural choice. Here the recording system stores that choice with the data as a TERM_MAPPING. The respiration archetype binds its own 'Sitting' to the same concept.",
   },
   {
-    id: "bp-site", group: "Blood pressure", label: "Location of measurement",
+    id: "bp-site", fhirBinding: {"strength": "example", "name": "Observation.bodySite: SNOMED CT body structures are given only as an example (body-site value set)", "url": "https://hl7.org/fhir/R4/valueset-body-site.html"}, group: "Blood pressure", label: "Location of measurement",
     openehr: { archetype: BP, path: "/protocol[at0011]/items[at0014]", localCode: "at0025" }, value: "Right arm (local at0025)",
     terms: [{ system: "SNOMED CT", code: "368209003", display: "Right upper arm structure", source: "mapping" }],
     fhir: "Observation.bodySite", how: "mapped",
-    note: "Local code again, so the mapping decides. 'Right arm' becomes 'Right upper arm structure': a sensible clinical choice, but a choice, and it lives in the integration rather than the archetype.",
+    note: "Local code again, so the mapping decides. FHIR only offers SNOMED CT body structures as an example for bodySite, not a rule. 'Right arm' becomes 'Right upper arm structure': a sensible clinical choice, but a choice, and it lives in the integration rather than the archetype.",
   },
   {
-    id: "bp-cuff", group: "Blood pressure", label: "Cuff size",
+    id: "bp-cuff", fhirBinding: {"strength": "none", "name": "No FHIR element exists for this item"}, group: "Blood pressure", label: "Cuff size",
     openehr: { archetype: BP, path: "/protocol[at0011]/items[at0013]", localCode: "at0017" }, value: "Adult (local at0017)",
     terms: [{ system: "SNOMED CT", code: "246153002", display: "Type of cuff", source: "archetype binding" }],
     fhir: null, how: "none",
     note: "FHIR Observation has no element for cuff size, so it is lost unless the exchange defines an extension. The node binding also deserves a look: 246153002 is 'Type of cuff', which is close to, but not the same as, cuff size.",
   },
   {
-    id: "pulse-rate", group: "Pulse", label: "Rate",
+    id: "pulse-rate", fhirBinding: {"strength": "fixed", "name": "LOINC 8867-4 is fixed by the FHIR heartrate profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Pulse", label: "Rate",
     openehr: { archetype: PULSE, path: "/data[at0002]/events[at0003]/data[at0001]/items[at0004]" }, value: "78 /min",
     terms: [
       { system: "SNOMED CT", code: "364075005", display: "Heart rate", source: "mapping" },
@@ -207,7 +207,7 @@ const links = [
     note: "pulse.v2 has no binding on Rate. The mapping supplies both codes. It also makes a clinical decision: the archetype covers pulse and heart beat, while FHIR's profile is 'heart rate'.",
   },
   {
-    id: "resp-rate", group: "Respiration", label: "Rate",
+    id: "resp-rate", fhirBinding: {"strength": "fixed", "name": "LOINC 9279-1 is fixed by the FHIR resprate profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Respiration", label: "Rate",
     openehr: { archetype: RESP, path: "/data[at0001]/events[at0002]/data[at0003]/items[at0004]" }, value: "16 /min",
     terms: [
       { system: "SNOMED CT", code: "271625008", display: "Rate of spontaneous respiration", source: "archetype binding" },
@@ -216,7 +216,7 @@ const links = [
     fhir: "Observation (resprate profile)", how: "bound",
   },
   {
-    id: "temp", group: "Body temperature", label: "Temperature",
+    id: "temp", fhirBinding: {"strength": "fixed", "name": "LOINC 8310-5 is fixed by the FHIR bodytemp profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Body temperature", label: "Temperature",
     openehr: { archetype: TEMP, path: "/data[at0002]/events[at0003]/data[at0001]/items[at0004]" }, value: "37.1 Cel",
     terms: [
       { system: "SNOMED CT", code: "386725007", display: "Body temperature", source: "archetype binding" },
@@ -226,13 +226,13 @@ const links = [
     note: "Both codes come straight from the archetype. The LOINC binding is written with the old terminology id LNC205; in FHIR it becomes http://loinc.org.",
   },
   {
-    id: "temp-site", group: "Body temperature", label: "Location of measurement",
+    id: "temp-site", fhirBinding: {"strength": "example", "name": "Observation.bodySite: SNOMED CT body structures are given only as an example (body-site value set)", "url": "https://hl7.org/fhir/R4/valueset-body-site.html"}, group: "Body temperature", label: "Location of measurement",
     openehr: { archetype: TEMP, path: "/protocol[at0020]/items[at0021]", localCode: "at0024" }, value: "Axilla (local at0024)",
     terms: [{ system: "SNOMED CT", code: "91470000", display: "Axillary region structure", source: "mapping" }],
     fhir: "Observation.bodySite", how: "mapped",
   },
   {
-    id: "spo2", group: "Pulse oximetry", label: "SpO₂",
+    id: "spo2", fhirBinding: {"strength": "fixed", "name": "LOINC 2708-6 is fixed by the FHIR oxygensat profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Pulse oximetry", label: "SpO₂",
     openehr: { archetype: SPO2, path: "/data[at0001]/events[at0002]/data[at0003]/items[at0006]" }, value: "97/100 (DV_PROPORTION, percent)",
     terms: [
       { system: "SNOMED CT", code: "431314004", display: "Peripheral oxygen saturation", source: "archetype binding" },
@@ -249,6 +249,20 @@ export default {
   title: "Vital signs",
   fhirTitle: "Bundle of 5 Observations (FHIR R4 vital-signs profiles)",
   template: "vital-signs-monitoring.opt",
+  scenario: {
+    "number": 1,
+    "setting": "Hospital ward: routine observations",
+    "recordedBy": "Ward nurse",
+    "when": "18 November 2026, 09:30",
+    "recorded": [
+      "Blood pressure 148/92 mmHg, sitting, right arm, adult cuff",
+      "Pulse 78 per minute",
+      "Respiration 16 per minute",
+      "Temperature 37.1 °C, measured in the axilla",
+      "SpO₂ 97 %"
+    ],
+    "exchange": "Sent as five FHIR Observations, one per vital sign, for example to a regional record or an early-warning system."
+  },
   story: "A nurse records a set of vital signs at 09:30: blood pressure 148/92 mmHg sitting, right arm, adult cuff; pulse 78/min; respiration 16/min; temperature 37.1 °C in the axilla; SpO₂ 97 %.",
   openehrTitle: "COMPOSITION from template 'Vital signs monitoring' (canonical JSON, abridged)",
   openehr,
