@@ -1,4 +1,4 @@
-# SNOMED CT in openEHR: openEHR, FHIR and SNOMED CT
+# SNOMED CT in openEHR
 
 A static web demonstrator for teaching how **openEHR, FHIR and SNOMED CT** fit together:
 
