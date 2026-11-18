@@ -10,7 +10,12 @@ It has two modes.
 
 ## Clinical scenarios
 
-The start page introduces three **clinical scenarios**: things a clinician recorded for one fictional patient. A short diagram explains the difference between *definitions* (archetypes, templates), the *recorded data* (an instance, which is what the scenarios show) and the *FHIR message*. Each scenario card says who recorded what, when, with which template, and what was sent.
+The start page introduces three **clinical scenarios**: things a clinician recorded for one fictional patient. A short diagram shows *definitions* (archetypes, template), the *recorded data* (an instance) and the *FHIR message*. Each scenario card offers two steps:
+
+1. **Explore the template.** Opens the template explorer on the scenario's template (the definition, with its archetypes inside). A banner there says it holds no patient data and links on to the scenario.
+2. **Follow the recorded data.** Opens the scenario walkthrough. That page links back to the full template.
+
+The look and feel follows the SNOMED CT Implementation Demos (ihtsdo.github.io/sct-implementation-demonstrator): Roboto, a dark toolbar, blue headings with Material icons, and flat outlined cards. It does not use the SNOMED International logo, as this is not an official SNOMED International product.
 
 Opening a scenario shows a "Recorded data" banner, followed by the walkthrough described below. For every item, step 3 also shows what FHIR demands of the target element. That is either a **terminology binding** (required, extensible, preferred, example only, or none), or, for the vital-sign codes, a **profile constraint**: the R4 vital-signs profiles define a mandatory coding slice (e.g. `Observation.code.coding:BPCode`) with `fixedUri` http://loinc.org and a `fixedCode`, so that exact LOINC coding must be present. Other codings, such as SNOMED CT, may be added alongside, because the slicing is open. This makes clear when FHIR actually demands a code system and when SNOMED CT is a choice made by the mapping. The bindings were checked against the FHIR R4 and IPS 2.0.1 StructureDefinitions.
 

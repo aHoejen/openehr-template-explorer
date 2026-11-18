@@ -3,72 +3,47 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>openEHR Template Explorer</title>
+  <title>openEHR, FHIR and SNOMED CT</title>
   <meta name="description" content="Explore an openEHR Operational Template (OPT 1.4): node tree, data types, coded values and terminology bindings.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23146c94'/%3E%3Cpath d='M9 9h6v6H9zM17 17h6v6h-6zM12 15v5h5' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230277BD'/%3E%3Cpath d='M9 9h6v6H9zM17 17h6v6h-6zM12 15v5h5' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block">
   <link rel="stylesheet" href="styles.css">
   <script type="module" src="src/app.js"></script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <h1>openEHR Template Explorer</h1>
-      <p class="tagline">How openEHR, SNOMED CT and FHIR fit together, from recording to exchange.</p>
-    </div>
+  <header class="toolbar">
+    <a class="tb-brand" href="#scenarios">
+      <span class="material-symbols-outlined tb-icon" aria-hidden="true">hub</span>
+      <span class="tb-title">openEHR, FHIR and SNOMED CT</span>
+    </a>
     <nav class="modes" aria-label="Mode">
-      <a href="#scenarios" id="mode-link-examples">Clinical scenarios</a>
-      <a href="#explore" id="mode-link-explore">Template explorer</a>
+      <a href="#scenarios" id="mode-link-examples"><span class="material-symbols-outlined" aria-hidden="true">assignment</span>Clinical scenarios</a>
+      <a href="#explore" id="mode-link-explore"><span class="material-symbols-outlined" aria-hidden="true">account_tree</span>Template explorer</a>
     </nav>
-    <div class="loaders" id="loaders">
-      <label class="btn primary" for="file-input">Open OPT file…</label>
-      <input id="file-input" type="file" accept=".opt,.xml,application/xml,text/xml" hidden>
-      <label class="sample-picker">
-        <span>or try a sample</span>
-        <select id="sample-select" aria-label="Load a sample template">
-          <option value="">Choose…</option>
-        </select>
-      </label>
-    </div>
   </header>
 
   <main id="main">
     <section id="mode-examples" hidden>
       <section id="scenarios-home">
-        <h2 class="home-title">Three clinical scenarios</h2>
-        <p class="home-intro">Each scenario is something a clinician <strong>recorded</strong> for one patient (fictional) in an openEHR-based EHR.
-          You follow that recorded data, one item at a time, from the EHR into a FHIR message, and see where SNOMED CT keeps the meaning the same.</p>
+        <header class="hero">
+          <h1>openEHR, FHIR and SNOMED CT</h1>
+          <p class="home-intro">See how <strong>openEHR</strong> (the EHR), <strong>FHIR</strong> (the message) and <strong>SNOMED CT</strong> (the meaning) work together.
+          For each scenario, first look at the <strong>template</strong>, which defines what can be recorded. Then follow what a clinician actually <strong>recorded</strong>, all the way into a FHIR message.</p>
+        </header>
 
-        <div class="flow" aria-label="From definitions to recorded data to message">
-          <div class="flow-box f-def"><span class="flow-kind">Definition</span><strong>Archetypes</strong><span>Reusable models of one clinical concept, such as blood pressure. Agreed internationally in CKM.</span></div>
-          <div class="flow-arrow" aria-hidden="true">→</div>
-          <div class="flow-box f-def"><span class="flow-kind">Definition</span><strong>Template</strong><span>Combines archetypes for one use, like a form: which items, which code lists.</span></div>
-          <div class="flow-arrow" aria-hidden="true">→</div>
-          <div class="flow-box f-inst"><span class="flow-kind">Instance · what the scenarios show</span><strong>Recorded data</strong><span>What a clinician actually entered for one patient, stored as a composition.</span></div>
-          <div class="flow-arrow" aria-hidden="true">→</div>
-          <div class="flow-box f-msg"><span class="flow-kind">Exchange</span><strong>FHIR message</strong><span>The same recorded data, sent to another system.</span></div>
-          <div class="flow-sct"><strong>SNOMED CT</strong> carries the meaning along the way: bound to archetype items, chosen from value sets in the template, or recorded as the value itself.</div>
-        </div>
+        <h2 class="section-title"><span class="material-symbols-outlined" aria-hidden="true">conversion_path</span>From definition to message</h2>
+        <ol class="flow-mini" aria-label="From definition to recorded data to message">
+          <li class="fm-def"><span class="fm-kind">Definition</span><strong>Archetypes</strong><span>one clinical concept each</span></li>
+          <li class="fm-def"><span class="fm-kind">Definition</span><strong>Template</strong><span>archetypes combined for one use</span></li>
+          <li class="fm-inst"><span class="fm-kind">Instance</span><strong>Recorded data</strong><span>what was entered for a patient</span></li>
+          <li class="fm-msg"><span class="fm-kind">Exchange</span><strong>FHIR message</strong><span>the same data, sent on</span></li>
+        </ol>
 
+        <h2 class="section-title"><span class="material-symbols-outlined" aria-hidden="true">assignment</span>Clinical scenarios</h2>
         <div id="scenario-cards" class="scenario-cards"></div>
-
-      <div class="layers home-layers" aria-label="The three standards">
-        <div class="layer l-openehr">
-          <h2>openEHR</h2>
-          <p class="layer-role">the EHR</p>
-          <p>How data is recorded and kept. Archetypes define clinical concepts; templates combine them for one use.</p>
-        </div>
-        <div class="layer l-fhir">
-          <h2>FHIR</h2>
-          <p class="layer-role">the message</p>
-          <p>How a template's data is exchanged. Each resource has its own structure, shaped by profiles such as vital signs or IPS.</p>
-        </div>
-        <div class="layer l-sct">
-          <h2>SNOMED CT</h2>
-          <p class="layer-role">the meaning</p>
-          <p>Keeps the meaning the same from recording to exchange, through bindings, coded values and value sets.</p>
-        </div>
-      </div>
-
       </section>
 
       <section id="scenario-detail" hidden>
@@ -90,12 +65,12 @@
       </div>
 
       <section class="takeaways-one">
-        <h3>What this example shows</h3>
+        <h3 class="section-title"><span class="material-symbols-outlined" aria-hidden="true">lightbulb</span>What this scenario shows</h3>
         <ul id="example-points"></ul>
       </section>
 
       <section class="sources" aria-labelledby="sources-h">
-        <h3 id="sources-h">Sources for this example</h3>
+        <h3 id="sources-h" class="section-title"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span>Sources for this scenario</h3>
         <ul id="example-sources"></ul>
       </section>
 
@@ -121,8 +96,6 @@
         <p class="pane-sub">Click any highlighted part to select that item.</p>
       </details>
 
-      </section>
-
       <details class="settings">
         <summary>Terminology server</summary>
         <form id="tx-form" class="tx-form">
@@ -136,9 +109,23 @@
       </details>
 
       <p class="muted small-print">The openEHR JSON is abridged canonical JSON: language, encoding and most archetype details are left out for readability. FHIR examples use R4. The mappings are written by hand for teaching. openEHR has no single standard mapping to FHIR; real projects use mapping engines and agreed mapping specifications.</p>
+      </section>
     </section>
 
     <section id="mode-explore" hidden>
+    <div class="explore-bar" id="loaders">
+      <h1 class="page-title"><span class="material-symbols-outlined" aria-hidden="true">account_tree</span>Template explorer</h1>
+      <div class="loaders">
+        <label class="btn primary" for="file-input"><span class="material-symbols-outlined" aria-hidden="true">upload_file</span>Open OPT file…</label>
+        <input id="file-input" type="file" accept=".opt,.xml,application/xml,text/xml" hidden>
+        <label class="sample-picker">
+          <span>or pick a template</span>
+          <select id="sample-select" aria-label="Load a sample template">
+            <option value="">Choose…</option>
+          </select>
+        </label>
+      </div>
+    </div>
     <section id="welcome" class="welcome">
       <div class="dropzone" id="dropzone">
         <p class="drop-title">Drop an OPT 1.4 XML file here</p>
@@ -154,6 +141,7 @@
     </section>
 
     <section id="explorer" hidden>
+      <div id="definition-banner" class="definition-banner"></div>
       <div class="template-head">
         <div>
           <h2 id="tpl-title"></h2>

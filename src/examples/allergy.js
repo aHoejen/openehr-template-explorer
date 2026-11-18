@@ -124,6 +124,7 @@ export default {
   fhirTitle: "AllergyIntolerance (IPS profile)",
   template: "ips-allergies-and-intolerances.opt",
   scenario: {
+    "summary": "A penicillin allergy and a past reaction (urticaria)",
     "number": 3,
     "setting": "GP surgery: medication review",
     "recordedBy": "General practitioner",

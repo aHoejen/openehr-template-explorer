@@ -1,6 +1,6 @@
 // UI for the openEHR Template Explorer. No framework, no build step.
 import { parseOpt, formatOccurrences, formatRange, bindingsToCsv, aqlFor } from "./opt-parser.js";
-import { initExamples, showExample, showScenarios } from "./examples-view.js";
+import { initExamples, showExample, showScenarios, scenarioForTemplate } from "./examples-view.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -91,9 +91,9 @@ function setMode(mode) {
   $("#loaders").hidden = mode !== "explore";
   $("#mode-link-examples").setAttribute("aria-current", String(mode === "examples"));
   $("#mode-link-explore").setAttribute("aria-current", String(mode === "explore"));
-  if (mode === "examples") document.title = "openEHR, SNOMED CT and FHIR: clinical scenarios";
-  else if (state.t) document.title = `${state.t.concept || state.t.templateId} – openEHR Template Explorer`;
-  else document.title = "openEHR Template Explorer";
+  if (mode === "examples") document.title = "Clinical scenarios – openEHR, FHIR and SNOMED CT";
+  else if (state.t) document.title = `${state.t.concept || state.t.templateId} – Template explorer`;
+  else document.title = "Template explorer – openEHR, FHIR and SNOMED CT";
 }
 
 async function route() {
@@ -187,7 +187,35 @@ function renderHeader() {
   }
   if (t.purpose) $("#tpl-meta").title = t.purpose;
   $("#bindings-count").textContent = t.bindings.length;
-  document.title = `${t.concept || t.templateId} – openEHR Template Explorer`;
+  renderDefinitionBanner(t);
+  document.title = `${t.concept || t.templateId} – Template explorer`;
+}
+
+/** Make clear the explorer shows a definition, not patient data; link to the matching scenario. */
+function renderDefinitionBanner(t) {
+  const roots = t.nodes.filter((n) => n.kind === "archetype_root");
+  const inside = roots.length - 1;
+  const scenario = loadedSampleFor ? scenarioForTemplate(loadedSampleFor) : null;
+  $("#definition-banner").replaceChildren(
+    h("span.definition-tag", "Definition"),
+    h(
+      "div",
+      h(
+        "p",
+        "This is a ",
+        h("strong", "template"),
+        `: it defines what can be recorded, as a ${t.root.rmType} built from ${inside} archetype${inside === 1 ? "" : "s"}. It holds no patient data. `,
+        "Each archetype root in the tree is marked with its archetype id.",
+      ),
+      scenario
+        ? h(
+            "p",
+            `Used in Scenario ${scenario.scenario.number}: ${scenario.title}. `,
+            h("a", { href: `#example=${scenario.id}` }, "Follow the data recorded with this template →"),
+          )
+        : null,
+    ),
+  );
 }
 
 function renderFindings() {

@@ -122,24 +122,43 @@ export function showScenarios() {
   $("#scenario-detail").hidden = true;
   fill(
     $("#scenario-cards"),
-    EXAMPLES.map((ex) =>
-      h(
+    EXAMPLES.map((ex) => {
+      const count = h("span.sc-count");
+      loadTemplate(ex.template).then((t) => {
+        if (!t) return;
+        const n = t.nodes.filter((x) => x.kind === "archetype_root").length - 1;
+        count.textContent = ` · ${n} archetype${n === 1 ? "" : "s"} inside`;
+      });
+      return h(
         "article.scenario-card",
         h("p.sc-number", `Scenario ${ex.scenario.number}`),
         h("h3", ex.title),
-        h("p.sc-setting", ex.scenario.setting),
-        h("p.sc-meta", `Recorded by: ${ex.scenario.recordedBy} · ${ex.scenario.when}`),
-        h("p.sc-label", "What was recorded"),
-        h("ul.sc-recorded", ex.scenario.recorded.map((r) => h("li", r))),
-        h("p.sc-label", "Recorded with template"),
-        h("p.sc-template", templateLabel(ex)),
-        h("p.sc-label", "Then"),
-        h("p.sc-exchange", ex.scenario.exchange),
-        h("a.btn.primary.sc-open", { href: `#example=${ex.id}` }, "Open this scenario →"),
-      ),
-    ),
+        h("p.sc-summary", ex.scenario.summary),
+        h("p.sc-meta", ex.scenario.setting),
+        h(
+          "ol.sc-steps",
+          h(
+            "li.sc-step.step-def",
+            h("span.sc-step-kind", "① The definition"),
+            h("span.sc-step-what", "Template ", templateLabel(ex), count),
+            h("a.btn.sc-open", { href: `#sample=${encodeURIComponent(ex.template)}` }, "Explore the template"),
+          ),
+          h(
+            "li.sc-step.step-inst",
+            h("span.sc-step-kind", "② The recorded data"),
+            h("span.sc-step-what", `Recorded by ${ex.scenario.recordedBy.toLowerCase()}, then sent as ${ex.fhirTitle}`),
+            h("a.btn.primary.sc-open", { href: `#example=${ex.id}` }, "Follow the recorded data →"),
+          ),
+        ),
+      );
+    }),
   );
   window.scrollTo(0, 0);
+}
+
+/** For the template explorer: which scenario uses this template file? */
+export function scenarioForTemplate(file) {
+  return EXAMPLES.find((e) => e.template === file) || null;
 }
 
 function templateLabel(ex) {
@@ -172,7 +191,8 @@ export function showExample(id) {
       h(
         "p.banner-meta",
         `${current.scenario.setting} · recorded by ${current.scenario.recordedBy.toLowerCase()}, ${current.scenario.when} · one (fictional) patient. `,
-        `This record is one instance of the template ${templateLabel(current)}; below, follow each recorded item from the EHR into the FHIR message.`,
+        `This record is one instance of the template ${templateLabel(current)}; below, follow each recorded item from the EHR into the FHIR message. `,
+        h("a", { href: `#sample=${encodeURIComponent(current.template)}` }, "See the full template (the definition)"),
       ),
     ),
   );

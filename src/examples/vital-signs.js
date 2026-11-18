@@ -250,6 +250,7 @@ export default {
   fhirTitle: "Bundle of 5 Observations (FHIR R4 vital-signs profiles)",
   template: "vital-signs-monitoring.opt",
   scenario: {
+    "summary": "Blood pressure, pulse, respiration, temperature and SpO₂ at a ward round",
     "number": 1,
     "setting": "Hospital ward: routine observations",
     "recordedBy": "Ward nurse",

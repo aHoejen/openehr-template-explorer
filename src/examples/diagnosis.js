@@ -95,6 +95,7 @@ export default {
   fhirTitle: "Condition (IPS profile)",
   template: "ips-problem-list.opt",
   scenario: {
+    "summary": "Essential hypertension, confirmed and active, on the problem list",
     "number": 2,
     "setting": "GP surgery: consultation",
     "recordedBy": "General practitioner",
