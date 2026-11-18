@@ -1,5 +1,5 @@
 {
-  "name": "openehr-template-explorer",
+  "name": "snomed-in-openehr",
   "version": "0.1.0",
   "private": true,
   "description": "Static web demonstrator for exploring openEHR Operational Templates (OPT 1.4) and their terminology bindings",

@@ -1,4 +1,4 @@
-# openEHR Template Explorer
+# SNOMED CT in openEHR: openEHR, FHIR and SNOMED CT
 
 A static web demonstrator for teaching how **openEHR, FHIR and SNOMED CT** fit together:
 
@@ -61,7 +61,7 @@ Everything runs in the browser. The OPT is parsed locally with `DOMParser` and n
 
 ## Live site
 
-<https://ahoejen.github.io/openehr-template-explorer/> (GitHub Pages, published from `main`).
+<https://ahoejen.github.io/snomed-in-openehr/> (GitHub Pages, published from `main`).
 
 ## Run it
 
