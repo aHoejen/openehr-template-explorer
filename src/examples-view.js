@@ -72,11 +72,6 @@ let openInExplorer = () => {};
 
 export function initExamples(opts) {
   openInExplorer = opts.openInExplorer;
-  fill($("#example-tabs"), 
-    ...EXAMPLES.map((ex) =>
-      h("button", { type: "button", role: "tab", "data-id": ex.id, onclick: () => showExample(ex.id) }, h("strong", ex.title), h("span", ex.fhirTitle)),
-    ),
-  );
   const input = $("#tx-server");
   input.value = readServer();
   $("#tx-form").addEventListener("submit", (e) => {
@@ -160,20 +155,25 @@ export function showExample(id) {
   current = prepare(raw);
   filter = null;
   selected = current.links[0].id;
-  for (const b of document.querySelectorAll("#example-tabs button")) b.setAttribute("aria-selected", String(b.dataset.id === current.id));
   if (!location.hash.includes(`example=${current.id}`)) history.replaceState(null, "", `#example=${current.id}`);
 
-  $("#example-story").textContent = current.story;
-  fill($("#scenario-count"), `Scenario ${current.scenario.number} of ${EXAMPLES.length}`);
+  const idx = EXAMPLES.findIndex((e) => e.id === current.id);
+  const next = EXAMPLES[(idx + 1) % EXAMPLES.length];
+  fill($("#scenario-title"), h("span.sc-number", `Scenario ${current.scenario.number} of ${EXAMPLES.length}`), " ", current.title);
+  const nextLink = $("#next-scenario");
+  nextLink.href = `#example=${next.id}`;
+  nextLink.textContent = `Next scenario: ${next.title} →`;
   fill(
     $("#instance-banner"),
     h("span.instance-tag", "Recorded data"),
     h(
-      "p",
-      "You are looking at what was ",
-      h("strong", "recorded"),
-      ` for one (fictional) patient. Setting: ${current.scenario.setting}. Recorded by: ${current.scenario.recordedBy}, ${current.scenario.when}. `,
-      `This record is one instance of the template ${templateLabel(current)}. Below, follow each recorded item from the EHR into the FHIR message.`,
+      "div",
+      h("p.banner-story", current.story),
+      h(
+        "p.banner-meta",
+        `${current.scenario.setting} · recorded by ${current.scenario.recordedBy.toLowerCase()}, ${current.scenario.when} · one (fictional) patient. `,
+        `This record is one instance of the template ${templateLabel(current)}; below, follow each recorded item from the EHR into the FHIR message.`,
+      ),
     ),
   );
   fill(

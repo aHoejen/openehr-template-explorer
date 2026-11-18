@@ -289,14 +289,6 @@ table.mini th { font-weight: 600; color: var(--muted); font-size: 11.5px; }
 .l-fhir { border-top-color: var(--c-fhir); } .l-fhir .layer-role { color: var(--c-fhir); }
 .l-sct { border-top-color: var(--c-sct); } .l-sct .layer-role { color: var(--c-sct); }
 
-.example-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-.example-tabs button {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 1px; cursor: pointer;
-  border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit;
-  border-radius: 8px; padding: 8px 14px; text-align: left;
-}
-.example-tabs button span { font-size: 12px; color: var(--muted); }
-.example-tabs button[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .story { font-size: 15px; margin: 4px 0 16px; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--surface); border-radius: 0 8px 8px 0; }
 
 .pane { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
@@ -536,3 +528,7 @@ table.mini th { font-weight: 600; color: var(--muted); font-size: 11.5px; }
 }
 .flow-box.f-msg::after { content: none !important; }
 @media (max-width: 760px) { .instance-banner { flex-direction: column; gap: 6px; } }
+.scenario-title { font-size: 20px; margin: 2px 0 10px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.scenario-title .sc-number { font-size: 12px; }
+.banner-story { font-size: 15px; margin: 0 0 4px; }
+.banner-meta { font-size: 12.5px; color: var(--muted); margin: 0; }
