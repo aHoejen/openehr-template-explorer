@@ -45,6 +45,10 @@ Open an openEHR **Operational Template (OPT 1.4 XML)** to see the following. For
 
 Everything runs in the browser. The OPT is parsed locally with `DOMParser` and never uploaded.
 
+## Live site
+
+<https://ahoejen.github.io/openehr-template-explorer/> (GitHub Pages, published from `main`).
+
 ## Run it
 
 It is a static site with no build step. ES modules need an HTTP server, so `file://` will not work:
@@ -121,7 +125,6 @@ test/                 node:test unit tests
 - SNOMED CT lookup through a configurable FHIR terminology server (`CodeSystem/$lookup`), to show the FSN and active status of each bound code.
 - Web template (JSON) input.
 - ADL 2 / OPT2 input.
-- GitHub Pages hosting. This needs a public repository, or a GitHub plan that offers Pages for private repositories.
 
 ## Licensing
 
