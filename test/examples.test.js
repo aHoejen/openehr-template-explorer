@@ -26,7 +26,7 @@ for (const raw of EXAMPLES) {
     });
 
     test("every item states the FHIR binding of its target element", () => {
-      const strengths = new Set(["fixed", "required", "extensible", "preferred", "example", "none"]);
+      const strengths = new Set(["required-coding", "required", "extensible", "preferred", "example", "none"]);
       for (const l of ex.links) {
         assert.ok(l.fhirBinding, `${l.id} has fhirBinding`);
         assert.ok(strengths.has(l.fhirBinding.strength), `${l.id}: ${l.fhirBinding.strength}`);

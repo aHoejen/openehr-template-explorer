@@ -147,7 +147,7 @@ const fhir = {
 // How each data item travels. `how` values are explained in the legend (examples-view.js).
 const links = [
   {
-    id: "bp", fhirBinding: {"strength": "fixed", "name": "LOINC 85354-9 is fixed by the FHIR bp profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Blood pressure", label: "Blood pressure (the whole observation)",
+    id: "bp", fhirBinding: {"strength": "required-coding", "name": "The FHIR R4 bp profile requires a coding with system http://loinc.org and code 85354-9", "slice": "Observation.code.coding:BPCode", "url": "https://hl7.org/fhir/R4/bp.html"}, group: "Blood pressure", label: "Blood pressure (the whole observation)",
     openehr: { archetype: BP, path: "/" }, value: "OBSERVATION blood_pressure.v2",
     terms: [
       { system: "SNOMED CT", code: "364090009", display: "Systemic arterial pressure", source: "archetype binding" },
@@ -157,7 +157,7 @@ const links = [
     note: "The archetype binds the whole observation to SNOMED CT (written SNOMED-CT(2003) in the file). FHIR's vital-signs profile also requires the LOINC panel code, which is not in the archetype. The mapping has to add it.",
   },
   {
-    id: "bp-sys", fhirBinding: {"strength": "fixed", "name": "LOINC 8480-6 is fixed by the FHIR bp profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Blood pressure", label: "Systolic",
+    id: "bp-sys", fhirBinding: {"strength": "required-coding", "name": "The FHIR R4 bp profile requires a coding with system http://loinc.org and code 8480-6", "slice": "Observation.component:SystolicBP.code.coding:SBPCode", "url": "https://hl7.org/fhir/R4/bp.html"}, group: "Blood pressure", label: "Systolic",
     openehr: { archetype: BP, path: "/data[at0001]/events[at0006]/data[at0003]/items[at0004]" }, value: "148 mm[Hg]",
     terms: [
       { system: "SNOMED CT", code: "271649006", display: "Systolic blood pressure", source: "archetype binding" },
@@ -167,7 +167,7 @@ const links = [
     note: "Same meaning in both: the SNOMED CT binding on at0004 becomes a coding on the component. Both standards use UCUM units, so mm[Hg] needs no conversion. The 2003 version stamp is dropped: FHIR identifies SNOMED CT by the system http://snomed.info/sct.",
   },
   {
-    id: "bp-dia", fhirBinding: {"strength": "fixed", "name": "LOINC 8462-4 is fixed by the FHIR bp profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Blood pressure", label: "Diastolic",
+    id: "bp-dia", fhirBinding: {"strength": "required-coding", "name": "The FHIR R4 bp profile requires a coding with system http://loinc.org and code 8462-4", "slice": "Observation.component:DiastolicBP.code.coding:DBPCode", "url": "https://hl7.org/fhir/R4/bp.html"}, group: "Blood pressure", label: "Diastolic",
     openehr: { archetype: BP, path: "/data[at0001]/events[at0006]/data[at0003]/items[at0005]" }, value: "92 mm[Hg]",
     terms: [
       { system: "SNOMED CT", code: "271650006", display: "Diastolic blood pressure", source: "archetype binding" },
@@ -197,7 +197,7 @@ const links = [
     note: "FHIR Observation has no element for cuff size, so it is lost unless the exchange defines an extension. The node binding also deserves a look: 246153002 is 'Type of cuff', which is close to, but not the same as, cuff size.",
   },
   {
-    id: "pulse-rate", fhirBinding: {"strength": "fixed", "name": "LOINC 8867-4 is fixed by the FHIR heartrate profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Pulse", label: "Rate",
+    id: "pulse-rate", fhirBinding: {"strength": "required-coding", "name": "The FHIR R4 heartrate profile requires a coding with system http://loinc.org and code 8867-4", "slice": "Observation.code.coding:HeartRateCode", "url": "https://hl7.org/fhir/R4/heartrate.html"}, group: "Pulse", label: "Rate",
     openehr: { archetype: PULSE, path: "/data[at0002]/events[at0003]/data[at0001]/items[at0004]" }, value: "78 /min",
     terms: [
       { system: "SNOMED CT", code: "364075005", display: "Heart rate", source: "mapping" },
@@ -207,7 +207,7 @@ const links = [
     note: "pulse.v2 has no binding on Rate. The mapping supplies both codes. It also makes a clinical decision: the archetype covers pulse and heart beat, while FHIR's profile is 'heart rate'.",
   },
   {
-    id: "resp-rate", fhirBinding: {"strength": "fixed", "name": "LOINC 9279-1 is fixed by the FHIR resprate profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Respiration", label: "Rate",
+    id: "resp-rate", fhirBinding: {"strength": "required-coding", "name": "The FHIR R4 resprate profile requires a coding with system http://loinc.org and code 9279-1", "slice": "Observation.code.coding:RespRateCode", "url": "https://hl7.org/fhir/R4/resprate.html"}, group: "Respiration", label: "Rate",
     openehr: { archetype: RESP, path: "/data[at0001]/events[at0002]/data[at0003]/items[at0004]" }, value: "16 /min",
     terms: [
       { system: "SNOMED CT", code: "271625008", display: "Rate of spontaneous respiration", source: "archetype binding" },
@@ -216,7 +216,7 @@ const links = [
     fhir: "Observation (resprate profile)", how: "bound",
   },
   {
-    id: "temp", fhirBinding: {"strength": "fixed", "name": "LOINC 8310-5 is fixed by the FHIR bodytemp profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Body temperature", label: "Temperature",
+    id: "temp", fhirBinding: {"strength": "required-coding", "name": "The FHIR R4 bodytemp profile requires a coding with system http://loinc.org and code 8310-5", "slice": "Observation.code.coding:BodyTempCode", "url": "https://hl7.org/fhir/R4/bodytemp.html"}, group: "Body temperature", label: "Temperature",
     openehr: { archetype: TEMP, path: "/data[at0002]/events[at0003]/data[at0001]/items[at0004]" }, value: "37.1 Cel",
     terms: [
       { system: "SNOMED CT", code: "386725007", display: "Body temperature", source: "archetype binding" },
@@ -232,7 +232,7 @@ const links = [
     fhir: "Observation.bodySite", how: "mapped",
   },
   {
-    id: "spo2", fhirBinding: {"strength": "fixed", "name": "LOINC 2708-6 is fixed by the FHIR oxygensat profile", "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"}, group: "Pulse oximetry", label: "SpO₂",
+    id: "spo2", fhirBinding: {"strength": "required-coding", "name": "The FHIR R4 oxygensat profile requires a coding with system http://loinc.org and code 2708-6", "slice": "Observation.code.coding:OxygenSatCode", "url": "https://hl7.org/fhir/R4/oxygensat.html"}, group: "Pulse oximetry", label: "SpO₂",
     openehr: { archetype: SPO2, path: "/data[at0001]/events[at0002]/data[at0003]/items[at0006]" }, value: "97/100 (DV_PROPORTION, percent)",
     terms: [
       { system: "SNOMED CT", code: "431314004", display: "Peripheral oxygen saturation", source: "archetype binding" },

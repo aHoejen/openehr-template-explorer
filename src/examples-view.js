@@ -442,7 +442,7 @@ function reasonFor(l) {
     case "bound":
       return (
         `${cap(arch)} binds ${item} to ${codeList(bound)}, so ${bound.length > 1 ? "these codes go" : "this code goes"} into the FHIR message unchanged.` +
-        (fhirOnly.length ? ` The FHIR profile also requires ${codeList(fhirOnly)}, which the archetype does not provide; the mapping adds it.` : "")
+        (fhirOnly.length ? ` The FHIR profile also requires the coding ${codeList(fhirOnly)} (a profile constraint, not a binding). The archetype does not provide it, so the mapping adds it.` : "")
       );
     case "coded":
       return `${cap(templateName())} only accepts SNOMED CT codes for ${item}, from the same value set the FHIR IPS profile prefers. The recorded code is sent unchanged.`;
@@ -456,8 +456,8 @@ function reasonFor(l) {
       if (l.openehr.localCode) {
         return `${cap(arch)} uses local codes (at-codes) for ${item}, with no SNOMED CT binding. A local code such as ${l.openehr.localCode} means nothing outside this archetype, so it can't be sent as it is. ${bindingClause(l.fhirBinding)} Someone had to choose the SNOMED CT concept, and another system could choose a different one.`;
       }
-      if (l.fhirBinding?.strength === "fixed") {
-        return `${cap(arch)} has no terminology binding for ${item}. The FHIR profile fixes the LOINC code, so that part is decided by FHIR. The SNOMED CT code is optional and was chosen by the mapping; another system could choose a different one or leave it out.`;
+      if (l.fhirBinding?.strength === "required-coding") {
+        return `${cap(arch)} has no terminology binding for ${item}. The FHIR profile requires a specific LOINC coding here (a profile constraint), so that part is decided by FHIR. The SNOMED CT code is optional and was chosen by the mapping; another system could choose a different one or leave it out.`;
       }
       return `${cap(arch)} has no terminology binding for ${item}. ${bindingClause(l.fhirBinding)} The mapping supplies the codes, and another system could choose different ones.`;
     case "text":
@@ -478,7 +478,11 @@ function fhirResourceType() {
 
 /** FHIR binding strengths in plain words. */
 export const STRENGTH = {
-  fixed: { label: "Fixed by the profile", text: "The FHIR profile fixes this exact code." },
+  "required-coding": {
+    label: "Required coding",
+    text:
+      "This is not a terminology binding. The FHIR profile slices the element's codings and makes one slice mandatory, with its system and code given as fixed values (fixedUri / fixedCode). That exact LOINC coding must be present. The slicing is open, so other codings such as SNOMED CT may be sent alongside it.",
+  },
   required: { label: "Required", text: "Only codes from this value set are allowed." },
   extensible: { label: "Extensible", text: "Codes from this value set must be used when one fits." },
   preferred: { label: "Preferred", text: "Codes from this value set are recommended, but other codes are allowed." },
@@ -623,11 +627,19 @@ function sentValue(l, pointers) {
 
 function bindingLine(b) {
   const st = STRENGTH[b.strength] || { label: b.strength, text: "" };
+  const isSlice = b.strength === "required-coding";
   return h(
     "div.binding-line",
-    h("span.binding-label", "FHIR binding: "),
+    h("span.binding-label", isSlice ? "FHIR profile constraint: " : "FHIR binding: "),
     h("span.strength.st-" + b.strength, { title: st.text }, st.label),
     h("p.step-note", b.url ? h("a", { href: b.url, target: "_blank", rel: "noopener noreferrer" }, b.name) : b.name, b.strength === "none" ? "." : `. ${st.text}`),
+    b.slice ? h("p.step-note", "Defined in the profile as the slice ", h("code", b.slice), ".") : null,
+    isSlice
+      ? h(
+          "p.step-note",
+          "Which LOINC code goes with the archetype item is decided by whoever writes the mapping (here, by hand). Neither FHIR nor openEHR derives it from the SNOMED CT code. Resources such as the LOINC Ontology, a SNOMED CT extension published with Regenstrief, can help check such pairings, but nothing applies them automatically.",
+        )
+      : null,
   );
 }
 

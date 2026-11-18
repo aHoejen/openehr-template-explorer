@@ -478,7 +478,7 @@ table.mini th { font-weight: 600; color: var(--muted); font-size: 11.5px; }
 .binding-label { font-size: 12px; font-weight: 600; color: var(--muted); }
 .binding-line .step-note { margin: 4px 0 0; }
 .strength { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 1px 7px; border-radius: 4px; }
-.st-fixed, .st-required { color: var(--o-lost); background: var(--o-lost-bg); }
+.st-required-coding, .st-required { color: var(--o-lost); background: var(--o-lost-bg); }
 .st-extensible { color: var(--o-dec); background: var(--o-dec-bg); }
 .st-preferred { color: var(--o-rule); background: var(--o-rule-bg); }
 .st-example, .st-none { color: var(--muted); background: var(--surface-2); }
