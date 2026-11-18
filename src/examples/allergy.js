@@ -128,6 +128,37 @@ export default {
   openehr,
   fhir,
   links,
+  sources: [
+    {
+      "role": "openEHR template",
+      "text": "“IPS Allergies and Intolerances” template, openEHR CKM (CKM id 1013.26.1365), CC BY-SA 4.0",
+      "url": "https://ckm.openehr.org/ckm/templates/1013.26.1365"
+    },
+    {
+      "role": "openEHR archetypes",
+      "text": "adverse_reaction_risk.v2 and adverse_reaction_event.v1: openEHR CKM, CC BY-SA 4.0",
+      "url": "https://ckm.openehr.org/ckm/"
+    },
+    {
+      "role": "openEHR specifications",
+      "text": "openEHR Reference Model (EHR, data types) and the canonical JSON format used for the openEHR data",
+      "url": "https://specifications.openehr.org/releases/RM/latest/ehr.html"
+    },
+    {
+      "role": "FHIR",
+      "text": "HL7 FHIR International Patient Summary (IPS) Implementation Guide: AllergyIntolerance (IPS) profile",
+      "url": "https://hl7.org/fhir/uv/ips/StructureDefinition-AllergyIntolerance-uv-ips.html"
+    },
+    {
+      "role": "SNOMED CT",
+      "text": "SNOMED CT International Edition. Codes checked as active in the 2026-01-01 release, through the SNOMED International Snowstorm Lite demo server. Use requires an Affiliate or national licence.",
+      "url": "https://www.snomed.org/get-snomed"
+    },
+    {
+      "role": "Mapping",
+      "text": "The openEHR → FHIR mapping and the example values were written for this demonstrator for teaching. They are not an official or published mapping."
+    }
+  ],
   points: [
     "The adverse-reaction archetypes carry no terminology bindings at all. Meaning comes from SNOMED CT values chosen from the IPS value sets in the template.",
     "When template and FHIR profile share value sets (substance, manifestation), SNOMED CT passes through unchanged. This is the strongest form of consistency.",

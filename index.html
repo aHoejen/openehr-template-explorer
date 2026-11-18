@@ -58,7 +58,7 @@
 
       <div class="walkthrough">
         <nav class="items" aria-label="Data items">
-          <h3>Pick an item</h3>
+          <div id="items-context" class="items-context"></div>
           <ul id="item-list" role="listbox" aria-label="Data items in this example"></ul>
         </nav>
         <section id="journey" class="journey" aria-live="polite"></section>
@@ -67,6 +67,11 @@
       <section class="takeaways-one">
         <h3>What this example shows</h3>
         <ul id="example-points"></ul>
+      </section>
+
+      <section class="sources" aria-labelledby="sources-h">
+        <h3 id="sources-h">Sources for this example</h3>
+        <ul id="example-sources"></ul>
       </section>
 
       <details id="full-records" class="full-records">
@@ -126,6 +131,7 @@
         <div>
           <h2 id="tpl-title"></h2>
           <p id="tpl-meta" class="muted"></p>
+          <p id="tpl-source" class="muted tpl-source"></p>
         </div>
         <nav class="tabs" role="tablist">
           <button role="tab" id="tab-tree" aria-selected="true" aria-controls="panel-tree">Tree</button>
@@ -174,7 +180,8 @@
 
   <footer class="footer">
     <p>Teaching demonstrator for openEHR, SNOMED CT and FHIR. The template explorer reads OPT 1.4 XML.
-      SNOMED CT codes are shown for education; using SNOMED CT needs an Affiliate or national licence.</p>
+      SNOMED CT codes are shown for education; using SNOMED CT needs an Affiliate or national licence.
+      <a href="samples/SOURCES.md" target="_blank" rel="noopener">Sources and licences of the sample templates</a>.</p>
   </footer>
   <div id="toast" class="toast" role="status" hidden></div>
 </body>

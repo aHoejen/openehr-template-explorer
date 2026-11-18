@@ -15,6 +15,12 @@ for (const raw of EXAMPLES) {
   const t = parseOpt(readFileSync(new URL(`../samples/${ex.template}`, import.meta.url), "utf8"), { DOMParser });
 
   describe(`example: ${ex.title}`, () => {
+    test("sources name the template, FHIR, SNOMED CT and the mapping", () => {
+      const roles = new Set(ex.sources.map((s) => s.role));
+      for (const r of ["openEHR template", "openEHR archetypes", "FHIR", "SNOMED CT", "Mapping"]) assert.ok(roles.has(r), r);
+      for (const s of ex.sources) if (s.url) assert.match(s.url, /^https:\/\//);
+    });
+
     test("link ids are unique and every link has a known 'how'", () => {
       const ids = ex.links.map((l) => l.id);
       assert.equal(new Set(ids).size, ids.length);

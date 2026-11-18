@@ -147,7 +147,7 @@ const fhir = {
 // How each data item travels. `how` values are explained in the legend (examples-view.js).
 const links = [
   {
-    id: "bp", group: "Blood pressure", label: "The observation itself",
+    id: "bp", group: "Blood pressure", label: "Blood pressure (the whole observation)",
     openehr: { archetype: BP, path: "/" }, value: "OBSERVATION blood_pressure.v2",
     terms: [
       { system: "SNOMED CT", code: "364090009", display: "Systemic arterial pressure", source: "archetype binding" },
@@ -254,6 +254,47 @@ export default {
   openehr,
   fhir,
   links,
+  sources: [
+    {
+      "role": "openEHR template",
+      "text": "“Vital signs monitoring” operational template, from the CaboLabs openEHR-SDK test resources (Apache-2.0)",
+      "url": "https://github.com/CaboLabs/openEHR-SDK"
+    },
+    {
+      "role": "openEHR archetypes",
+      "text": "blood_pressure.v2, pulse.v2, respiration.v2, body_temperature.v2, pulse_oximetry.v1 and their terminology bindings: openEHR Clinical Knowledge Manager (CKM), CC BY-SA 4.0",
+      "url": "https://ckm.openehr.org/ckm/"
+    },
+    {
+      "role": "openEHR specifications",
+      "text": "openEHR Reference Model (EHR, data types) and the canonical JSON format used for the openEHR data",
+      "url": "https://specifications.openehr.org/releases/RM/latest/ehr.html"
+    },
+    {
+      "role": "FHIR",
+      "text": "HL7 FHIR R4 vital-signs profiles (bp, heartrate, resprate, bodytemp, oxygensat)",
+      "url": "https://hl7.org/fhir/R4/observation-vitalsigns.html"
+    },
+    {
+      "role": "FHIR",
+      "text": "HL7 FHIR R4 extension observation-bodyPosition",
+      "url": "https://hl7.org/fhir/R4/extension-observation-bodyposition.html"
+    },
+    {
+      "role": "SNOMED CT",
+      "text": "SNOMED CT International Edition. Codes checked as active in the 2026-01-01 release, through the SNOMED International Snowstorm Lite demo server. Use requires an Affiliate or national licence.",
+      "url": "https://www.snomed.org/get-snomed"
+    },
+    {
+      "role": "LOINC",
+      "text": "LOINC codes © Regenstrief Institute, Inc., used under the LOINC licence",
+      "url": "https://loinc.org/"
+    },
+    {
+      "role": "Mapping",
+      "text": "The openEHR → FHIR mapping and the example values were written for this demonstrator for teaching. They are not an official or published mapping."
+    }
+  ],
   points: [
     "One openEHR composition, five archetypes. In FHIR this becomes five Observation resources: one per vital sign, each following a profile.",
     "Where the archetype has a SNOMED CT binding, the meaning travels with no extra decision: systolic, diastolic, respiration rate, temperature, SpO₂.",

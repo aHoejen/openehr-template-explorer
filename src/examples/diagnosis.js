@@ -99,6 +99,37 @@ export default {
   openehr,
   fhir,
   links,
+  sources: [
+    {
+      "role": "openEHR template",
+      "text": "“IPS Problem List” template, openEHR CKM (CKM id 1013.26.1363), CC BY-SA 4.0",
+      "url": "https://ckm.openehr.org/ckm/templates/1013.26.1363"
+    },
+    {
+      "role": "openEHR archetypes",
+      "text": "problem_diagnosis.v1 and problem_qualifier.v2: openEHR CKM, CC BY-SA 4.0",
+      "url": "https://ckm.openehr.org/ckm/"
+    },
+    {
+      "role": "openEHR specifications",
+      "text": "openEHR Reference Model (EHR, data types) and the canonical JSON format used for the openEHR data",
+      "url": "https://specifications.openehr.org/releases/RM/latest/ehr.html"
+    },
+    {
+      "role": "FHIR",
+      "text": "HL7 FHIR International Patient Summary (IPS) Implementation Guide: Condition (IPS) profile",
+      "url": "https://hl7.org/fhir/uv/ips/StructureDefinition-Condition-uv-ips.html"
+    },
+    {
+      "role": "SNOMED CT",
+      "text": "SNOMED CT International Edition. Codes checked as active in the 2026-01-01 release, through the SNOMED International Snowstorm Lite demo server. Use requires an Affiliate or national licence.",
+      "url": "https://www.snomed.org/get-snomed"
+    },
+    {
+      "role": "Mapping",
+      "text": "The openEHR → FHIR mapping and the example values were written for this demonstrator for teaching. They are not an official or published mapping."
+    }
+  ],
   points: [
     "SNOMED CT is used in two ways in openEHR. The archetype can bind a node to a concept (what the element means), or the data can hold a SNOMED CT code as its value (what was found). The diagnosis is the second kind.",
     "The IPS template points its coded elements at the same value sets as the IPS FHIR profiles, so the codes pass through unchanged.",

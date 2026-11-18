@@ -2,8 +2,14 @@
 // through SNOMED CT (meaning), to FHIR (sent).
 import { EXAMPLES, prepare, resolvePointer } from "./examples/index.js";
 import { renderJson, invert } from "./json-view.js";
+import { parseOpt } from "./opt-parser.js";
 
 const $ = (sel) => document.querySelector(sel);
+
+/** replaceChildren that skips null/false, so optional parts never render as "null". */
+function fill(el, ...children) {
+  el.replaceChildren(...children.flat(Infinity).filter((c) => c != null && c !== false));
+}
 
 function h(tag, attrs, ...children) {
   const [name, ...classes] = tag.split(".");
@@ -57,6 +63,8 @@ const SOURCE_TEXT = {
 const DEFAULT_SERVER = "https://implementation-demo.snomedtools.org/snowstorm-lite/fhir";
 const lookupCache = new Map();
 
+const templateCache = new Map(); // file -> Promise<parsed template>
+let currentTemplate = null; // parsed OPT of the current example, once loaded
 let current = null; // prepared example
 let selected = null; // link id
 let filter = null; // outcome key
@@ -64,7 +72,7 @@ let openInExplorer = () => {};
 
 export function initExamples(opts) {
   openInExplorer = opts.openInExplorer;
-  $("#example-tabs").replaceChildren(
+  fill($("#example-tabs"), 
     ...EXAMPLES.map((ex) =>
       h("button", { type: "button", role: "tab", "data-id": ex.id, onclick: () => showExample(ex.id) }, h("strong", ex.title), h("span", ex.fhirTitle)),
     ),
@@ -92,7 +100,7 @@ export function initExamples(opts) {
   $("#item-list").addEventListener("keydown", (e) => {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
     e.preventDefault();
-    const items = visibleLinks();
+    const items = groupedLinks().flatMap((g) => g.items);
     const i = items.findIndex((l) => l.id === selected);
     const next = items[Math.max(0, Math.min(items.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)))];
     if (next) {
@@ -122,16 +130,138 @@ export function showExample(id) {
   if (!location.hash.includes(`example=${current.id}`)) history.replaceState(null, "", `#example=${current.id}`);
 
   $("#example-story").textContent = current.story;
-  $("#example-points").replaceChildren(...current.points.map((p) => h("li", p)));
+  fill(
+    $("#example-sources"),
+    current.sources.map((src) =>
+      h(
+        "li",
+        h("span.src-role", src.role),
+        h("span.src-text", src.text, src.url ? [" ", h("a", { href: src.url, target: "_blank", rel: "noopener noreferrer" }, linkLabel(src.url))] : null),
+      ),
+    ),
+  );
+  fill($("#example-points"), ...current.points.map((p) => h("li", p)));
   $("#openehr-title").textContent = current.openehrTitle;
   $("#fhir-title").textContent = current.fhirTitle;
-  $("#openehr-json").replaceChildren(renderJson(current.openehrJson, invert(current.openehrPointers), (id) => select(id, true)));
-  $("#fhir-json").replaceChildren(renderJson(current.fhirJson, invert(current.fhirPointers), (id) => select(id, true)));
+  fill($("#openehr-json"), renderJson(current.openehrJson, invert(current.openehrPointers), (id) => select(id, true)));
+  fill($("#fhir-json"), renderJson(current.fhirJson, invert(current.fhirPointers), (id) => select(id, true)));
+  currentTemplate = null;
   renderSummary();
+  renderContext();
   renderList();
   renderJourney();
   renderConcepts();
   highlight(false);
+  loadTemplate(current.template).then((t) => {
+    if (!t || current.template !== raw.template) return;
+    currentTemplate = t;
+    renderContext();
+    renderList();
+    renderJourney();
+  });
+}
+
+function linkLabel(url) {
+  return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
+function loadTemplate(file) {
+  if (!templateCache.has(file)) {
+    templateCache.set(
+      file,
+      fetch(`samples/${encodeURIComponent(file)}`)
+        .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
+        .then((xml) => parseOpt(xml))
+        .catch(() => {
+          templateCache.delete(file);
+          return null;
+        }),
+    );
+  }
+  return templateCache.get(file);
+}
+
+// ------------------------------------------------------------------ template context
+
+const RM_WORD = { COMPOSITION: "composition", SECTION: "section" };
+
+/** Archetypes in the template, in tree order, with what the example uses. */
+function archetypeRoots() {
+  if (!currentTemplate) return [];
+  const used = new Set(current.links.map((l) => l.openehr.archetype));
+  return currentTemplate.nodes
+    .filter((n) => n.kind === "archetype_root")
+    .map((n) => {
+      const parent = n.parentId ? currentTemplate.nodes.find((x) => x.id === n.parentId) : null;
+      const parentRoot = parent ? currentTemplate.nodes.find((x) => x.id === parent.archetypeRootRef) : null;
+      return { node: n, id: n.archetypeId, rm: n.rmType, name: n.name, used: used.has(n.archetypeId), parent: parentRoot };
+    });
+}
+
+function renderContext() {
+  const box = $("#items-context");
+  if (!currentTemplate) {
+    fill(box, h("h3", "Pick an item"), h("p.ctx-line.muted", `From template “${current.template}”…`));
+    return;
+  }
+  const t = currentTemplate;
+  const roots = archetypeRoots();
+  const top = roots[0];
+  const inside = roots.slice(1);
+  const usedInside = inside.filter((r) => r.used || current.links.some((l) => l.openehr.archetype === r.id));
+  const word = RM_WORD[top.rm] || top.rm.toLowerCase();
+
+  fill(box, 
+    h("h3", `Pick an item from this ${word}`),
+    h(
+      "p.ctx-line",
+      "Template ",
+      h("strong", `“${t.templateId}”`),
+      ` builds a ${top.rm} that contains `,
+      h("strong", `${inside.length} archetype${inside.length === 1 ? "" : "s"}`),
+      reused(inside),
+      usedInside.length < inside.length ? `. This example uses ${usedInside.length} of them.` : ".",
+    ),
+    templateSourceLine(),
+    ...(top.rm === "SECTION" ? [h("p.ctx-line.muted", "A section template: in practice it is placed inside a composition, such as an International Patient Summary.")] : []),
+    h(
+      "details.ctx-archetypes",
+      h("summary", "Show the archetypes"),
+      h(
+        "ul",
+        h("li.root", rmBadge(top.rm), " ", h("span", top.name), h("code.small", top.id)),
+        inside.map((r) =>
+          h(
+            "li" + (r.used ? ".used" : ".unused") + (r.parent && r.parent.archetypeId !== top.id ? ".nested" : ""),
+            rmBadge(r.rm),
+            " ",
+            h("span", r.name),
+            r.used ? null : h("span.ctx-tag", "not in this example"),
+            h("code.small", r.id),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/** " (clinical_evidence.v1 is used twice)" when the template reuses an archetype. */
+function reused(roots) {
+  const count = new Map();
+  for (const r of roots) count.set(r.id, (count.get(r.id) || 0) + 1);
+  const words = { 2: "twice", 3: "three times" };
+  const dups = [...count].filter(([, n]) => n > 1).map(([id, n]) => `${id.replace(/^openEHR-EHR-[A-Z_]+\./, "")} is used ${words[n] || n + " times"}`);
+  return dups.length ? ` (${dups.join(", ")})` : "";
+}
+
+function templateSourceLine() {
+  const src = current.sources.find((x) => x.role === "openEHR template");
+  if (!src) return null;
+  return h("p.ctx-line.ctx-source", "Source: ", src.url ? h("a", { href: src.url, target: "_blank", rel: "noopener noreferrer" }, src.text) : src.text);
+}
+
+function rmBadge(rm) {
+  return h("span.rm-badge", rm);
 }
 
 // ------------------------------------------------------------------ summary + list
@@ -139,7 +269,7 @@ export function showExample(id) {
 function renderSummary() {
   const counts = Object.fromEntries(Object.keys(OUTCOMES).map((k) => [k, 0]));
   for (const l of current.links) counts[outcomeOf(l)]++;
-  $("#outcome-summary").replaceChildren(
+  fill($("#outcome-summary"), 
     h("span.summary-lead", `${current.links.length} items:`),
     ...Object.entries(OUTCOMES)
       .filter(([k]) => counts[k])
@@ -170,35 +300,58 @@ function renderSummary() {
   );
 }
 
+/** Links in template order, grouped by the archetype they belong to. */
+function groupedLinks() {
+  const vis = visibleLinks();
+  const roots = archetypeRoots();
+  const order = roots.length ? roots.map((r) => r.id) : [...new Set(current.links.map((l) => l.openehr.archetype))];
+  const groups = [];
+  for (const id of order) {
+    const items = vis.filter((l) => l.openehr.archetype === id);
+    if (!items.length || groups.some((g) => g.id === id)) continue;
+    const r = roots.find((x) => x.id === id);
+    groups.push({ id, items, rm: r?.rm || id.split("-")[2]?.split(".")[0], name: r?.name || items[0].group, parent: r?.parent, isTop: r === roots[0] });
+  }
+  return groups;
+}
+
 function renderList() {
   const out = [];
-  let group = null;
-  for (const l of visibleLinks()) {
-    if (l.group !== group) {
-      group = l.group;
-      out.push(h("li.item-group", { role: "presentation" }, group));
-    }
-    const k = outcomeOf(l);
+  for (const g of groupedLinks()) {
     out.push(
       h(
-        "li",
-        { role: "presentation" },
-        h(
-          "button.item.o-" + k,
-          {
-            type: "button",
-            role: "option",
-            "data-id": l.id,
-            "aria-selected": String(l.id === selected),
-            onclick: () => select(l.id),
-          },
-          h("span.o-icon", { title: OUTCOMES[k].label, "aria-label": OUTCOMES[k].label }, OUTCOMES[k].icon),
-          h("span.item-text", h("span.item-label", l.label), h("span.item-value", plainValue(l.value))),
-        ),
+        "li.item-group" + (g.parent && !g.isTop && g.parent !== archetypeRoots()[0]?.node ? ".nested" : ""),
+        { role: "presentation", title: g.id },
+        rmBadge(g.rm),
+        " ",
+        h("span", g.name),
+        g.isTop ? h("span.group-note", " (the template's root)") : null,
+        g.parent && !g.isTop && g.parent.archetypeId !== archetypeRoots()[0]?.id ? h("span.group-note", ` inside ${g.parent.name}`) : null,
       ),
     );
+    for (const l of g.items) {
+      const k = outcomeOf(l);
+      out.push(
+        h(
+          "li",
+          { role: "presentation" },
+          h(
+            "button.item.o-" + k,
+            {
+              type: "button",
+              role: "option",
+              "data-id": l.id,
+              "aria-selected": String(l.id === selected),
+              onclick: () => select(l.id),
+            },
+            h("span.o-icon", { title: OUTCOMES[k].label, "aria-label": OUTCOMES[k].label }, OUTCOMES[k].icon),
+            h("span.item-text", h("span.item-label", l.label), h("span.item-value", plainValue(l.value))),
+          ),
+        ),
+      );
+    }
   }
-  $("#item-list").replaceChildren(...out);
+  fill($("#item-list"), ...out);
 }
 
 /** "Sitting (local at1001)" -> "Sitting": keep technical codes out of the list. */
@@ -220,12 +373,74 @@ function select(id, fromJson) {
 
 // ------------------------------------------------------------------ journey (the selected item)
 
+/** "the Blood pressure archetype (blood_pressure.v2)" */
+function archetypeName(id) {
+  const short = id.replace(/^openEHR-EHR-[A-Z_]+\./, "");
+  const r = archetypeRoots().find((x) => x.id === id);
+  return r ? `the ${r.name} archetype (${short})` : `the ${short} archetype`;
+}
+
+function templateName() {
+  return `the “${currentTemplate?.templateId || current.template.replace(/\.opt$/, "")}” template`;
+}
+
+const codeList = (terms) => terms.map((t) => `${t.system} ${t.code} “${t.display}”`).join(" and ");
+
+/** The verdict sentence for one item, naming the archetype, item and template involved. */
+function reasonFor(l) {
+  const item = `“${l.label}”`;
+  const arch = archetypeName(l.openehr.archetype);
+  const bound = l.terms.filter((t) => t.source === "archetype binding");
+  const fhirOnly = l.terms.filter((t) => t.source === "FHIR profile");
+  switch (l.how) {
+    case "bound":
+      return (
+        `${cap(arch)} binds ${item} to ${codeList(bound)}, so ${bound.length > 1 ? "these codes go" : "this code goes"} into the FHIR message unchanged.` +
+        (fhirOnly.length ? ` The FHIR profile also requires ${codeList(fhirOnly)}, which the archetype does not provide; the mapping adds it.` : "")
+      );
+    case "coded":
+      return `${cap(templateName())} only accepts SNOMED CT codes for ${item}, from the same value set the FHIR profile uses. The recorded code is sent unchanged.`;
+    case "direct":
+      return `${item} has the same kind of value in openEHR and in FHIR, so it is copied across as it is.`;
+    case "context":
+      return `Nobody records ${item} as data. FHIR needs it, so the mapping fills it in from ${l.openehr.path === null ? "the patient's EHR that holds this record" : templateName()}.`;
+    case "fhir-code":
+      return `${cap(arch)} records ${item} with local codes (at-codes). FHIR only accepts its own fixed codes here, so a small lookup table translates each local code.`;
+    case "mapped":
+      return l.openehr.localCode
+        ? `${cap(arch)} uses local codes (at-codes) for ${item} and has no SNOMED CT binding for them. To send it in FHIR, someone had to choose a SNOMED CT concept. Another system could choose a different one.`
+        : `${cap(arch)} has no terminology binding for ${item}. The mapping supplies the codes for the FHIR message. Another system could choose different ones.`;
+    case "text":
+      return `${cap(templateName())} only allows free text for ${item}. The FHIR message can carry the words, but not a reliable code.`;
+    case "none":
+      return `FHIR ${fhirResourceType()} has no standard element for ${item}. The value stays in the openEHR record and is not sent.`;
+    default:
+      return HOW[l.how].reason;
+  }
+}
+
+function fhirResourceType() {
+  const j = current.fhirJson;
+  return j.resourceType === "Bundle" ? j.entry?.[0]?.resource?.resourceType || "Bundle" : j.resourceType;
+}
+
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** What the openEHR step says about how the value is stored. */
+function storedNote(l) {
+  const arch = archetypeName(l.openehr.archetype);
+  if (l.openehr.localCode) return `Stored as the local code ${l.openehr.localCode}, which is defined only inside ${arch}.`;
+  if (l.how === "coded") return `Stored with its SNOMED CT code. ${cap(templateName())} limits the choice to a value set.`;
+  if (l.how === "text") return `Stored as free text: ${templateName()} offers no code list for this item.`;
+  if (l.how === "context") return l.openehr.path === null ? "Not stored as an item: it is the patient whose EHR holds this record." : `Not stored as an item: it follows from ${templateName()}.`;
+  return null;
+}
+
 function renderJourney() {
   const box = $("#journey");
   const l = current.links.find((x) => x.id === selected);
-  if (!l) return box.replaceChildren(h("p.muted", "No items match this filter."));
-  const how = HOW[l.how];
-  const k = how.outcome;
+  if (!l) return fill(box, h("p.muted", "No items match this filter."));
+  const k = HOW[l.how].outcome;
   const sct = l.terms.filter((t) => t.system === "SNOMED CT");
   const other = l.terms.filter((t) => t.system !== "SNOMED CT");
 
@@ -233,10 +448,7 @@ function renderJourney() {
     "div.step.s-openehr",
     h("div.step-head", h("span.step-no", "1"), h("div", h("h4", "Recorded in openEHR"), h("p.step-sub", "the EHR"))),
     h("p.step-value", plainValue(l.value)),
-    l.openehr.localCode ? h("p.step-note", `Stored with the local code ${l.openehr.localCode}, which only has meaning inside this archetype.`) : null,
-    l.how === "coded" ? h("p.step-note", "Stored with a SNOMED CT code, chosen from a value set the template defines.") : null,
-    l.how === "text" ? h("p.step-note", "Stored as free text only.") : null,
-    l.how === "context" ? h("p.step-note", "Nobody records this: it comes from the template or the record itself.") : null,
+    storedNote(l) ? h("p.step-note", storedNote(l)) : null,
     snippet(current.openehrJson, current.openehrPointers.get(l.id), "openEHR"),
   );
 
@@ -257,11 +469,11 @@ function renderJourney() {
     fhirPtrs.length ? snippet(current.fhirJson, fhirPtrs, "FHIR") : null,
   );
 
-  box.replaceChildren(
+  fill(box, 
     h(
       "div.verdict.o-" + k,
       h("span.o-icon.big", { "aria-hidden": "true" }, OUTCOMES[k].icon),
-      h("div", h("h3", `${l.label}: ${OUTCOMES[k].label.toLowerCase()}`), h("p", how.reason)),
+      h("div", h("h3", `${l.label}: ${OUTCOMES[k].label.toLowerCase()}`), h("p", reasonFor(l))),
     ),
     h("div.steps", step1, arrow(k), step2, arrow(k), step3),
     l.note ? h("div.why.o-" + k, h("h4", "Why this matters"), h("p", l.note)) : null,
@@ -374,7 +586,7 @@ function renderConcepts() {
   }
   const order = { "SNOMED CT": 0, LOINC: 1, FHIR: 2 };
   const items = [...byKey.values()].sort((a, b) => (order[a.system] ?? 9) - (order[b.system] ?? 9));
-  $("#concepts").replaceChildren(
+  fill($("#concepts"), 
     ...items.map((t) => {
       const cls = t.system === "SNOMED CT" ? "sct" : t.system === "LOINC" ? "loinc" : "other";
       const live = h("div.live");
@@ -423,7 +635,7 @@ function codeLink(t) {
 async function lookup(code, target) {
   const server = readServer().replace(/\/+$/, "");
   const key = `${server}|${code}`;
-  target.replaceChildren(h("span.muted", "Checking terminology server…"));
+  fill(target, h("span.muted", "Checking terminology server…"));
   try {
     if (!lookupCache.has(key)) {
       lookupCache.set(
@@ -447,7 +659,7 @@ async function lookup(code, target) {
     const version = params.find((x) => x.name === "version")?.valueString || "";
     const edition = (version.match(/version\/(\d{8})/) || [])[1];
     const inactive = inactiveProp?.valueBoolean === true;
-    target.replaceChildren(
+    fill(target, 
       h("span.fsn", fsn || params.find((x) => x.name === "display")?.valueString || ""),
       " ",
       inactiveProp ? h("span.flag." + (inactive ? "unbound" : "ok"), inactive ? "inactive" : "active") : null,
@@ -455,6 +667,6 @@ async function lookup(code, target) {
     );
   } catch (e) {
     lookupCache.delete(key);
-    target.replaceChildren(h("span.muted", `Terminology server not reachable (${e.message}).`));
+    fill(target, h("span.muted", `Terminology server not reachable (${e.message}).`));
   }
 }

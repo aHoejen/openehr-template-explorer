@@ -78,7 +78,7 @@ async function loadSample(file) {
     return false;
   }
   $("#sample-select").value = file;
-  load(await r.text(), file);
+  load(await r.text(), file, true);
   loadedSample = file;
   return true;
 }
@@ -123,7 +123,10 @@ async function openInExplorer(file, archetypeId, path) {
   window.scrollTo(0, 0);
 }
 
-function load(xml, sourceName) {
+let loadedSampleFor = null;
+
+function load(xml, sourceName, fromSample = false) {
+  loadedSampleFor = fromSample ? sourceName : null;
   hideError();
   let t;
   try {
@@ -167,6 +170,17 @@ function renderHeader() {
   if (t.language) bits.push(`language: ${t.language}`);
   bits.push(`${t.archetypes.length} archetype roots`, `${t.nodes.length} nodes`);
   $("#tpl-meta").textContent = bits.join(" · ");
+  const sample = sampleList.find((x) => x.file === loadedSampleFor);
+  const srcLine = $("#tpl-source");
+  if (sample) {
+    srcLine.replaceChildren(
+      "Source: ",
+      sample.sourceUrl ? h("a", { href: sample.sourceUrl, target: "_blank", rel: "noopener noreferrer" }, sample.source) : sample.source,
+      ` · Licence: ${sample.licence}`,
+    );
+  } else {
+    srcLine.textContent = "Source: your own file, opened in this browser only.";
+  }
   if (t.purpose) $("#tpl-meta").title = t.purpose;
   $("#bindings-count").textContent = t.bindings.length;
   document.title = `${t.concept || t.templateId} – openEHR Template Explorer`;

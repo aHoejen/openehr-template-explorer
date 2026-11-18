@@ -2,36 +2,56 @@
   {
     "file": "vital-signs-monitoring.opt",
     "label": "Vital signs monitoring",
-    "note": "Five vital-sign archetypes with full coded value lists: respiration's lists are bound to SNOMED CT, blood pressure's are local only."
+    "note": "Five vital-sign archetypes with full coded value lists: respiration's lists are bound to SNOMED CT, blood pressure's are local only.",
+    "source": "CaboLabs openEHR-SDK test resources",
+    "licence": "Apache-2.0 (template); archetypes from openEHR CKM, CC BY-SA 4.0",
+    "sourceUrl": "https://github.com/CaboLabs/openEHR-SDK"
   },
   {
     "file": "vital-signs-ckm.opt",
     "label": "Vital signs (CKM)",
-    "note": "The openEHR CKM 'Vital signs' template: lean, one data point per archetype, many archetype bindings not used in the template."
+    "note": "The openEHR CKM 'Vital signs' template: lean, one data point per archetype, many archetype bindings not used in the template.",
+    "source": "openEHR CKM export (via the FerroHEALTH/FerroEHR corpus)",
+    "licence": "CC BY-SA 4.0",
+    "sourceUrl": "https://ckm.openehr.org/ckm/"
   },
   {
     "file": "ips-problem-list.opt",
     "label": "IPS Problem List (CKM)",
-    "note": "International Patient Summary problem list: problem/diagnosis constrained to the IPS FHIR 'problems' value set."
+    "note": "International Patient Summary problem list: problem/diagnosis constrained to the IPS FHIR 'problems' value set.",
+    "source": "openEHR CKM, template 1013.26.1363 (via the FerroHEALTH/FerroEHR corpus)",
+    "licence": "CC BY-SA 4.0",
+    "sourceUrl": "https://ckm.openehr.org/ckm/templates/1013.26.1363"
   },
   {
     "file": "ips-allergies-and-intolerances.opt",
     "label": "IPS Allergies and Intolerances (CKM)",
-    "note": "International Patient Summary allergies: substance and manifestation constrained to IPS FHIR value sets; no archetype bindings."
+    "note": "International Patient Summary allergies: substance and manifestation constrained to IPS FHIR value sets; no archetype bindings.",
+    "source": "openEHR CKM, template 1013.26.1365 (via the FerroHEALTH/FerroEHR corpus)",
+    "licence": "CC BY-SA 4.0",
+    "sourceUrl": "https://ckm.openehr.org/ckm/templates/1013.26.1365"
   },
   {
     "file": "ehrn-vital-signs.opt",
     "label": "EHRN Vital signs (EHRbase)",
-    "note": "Archetypes nested in a SECTION, bindings written as [SNOMED-CT(2003)::code]."
+    "note": "Archetypes nested in a SECTION, bindings written as [SNOMED-CT(2003)::code].",
+    "source": "EHRbase openEHR_SDK test data",
+    "licence": "Apache-2.0 (template); archetypes from openEHR CKM, CC BY-SA",
+    "sourceUrl": "https://github.com/ehrbase/openEHR_SDK"
   },
   {
     "file": "psychotherapy-note.opt",
     "label": "Psychotherapy note",
-    "note": "External value set constraint (C_CODE_REFERENCE with referenceSetUri)."
+    "note": "External value set constraint (C_CODE_REFERENCE with referenceSetUri).",
+    "source": "CaboLabs EHRServer",
+    "licence": "Apache-2.0",
+    "sourceUrl": "https://github.com/ppazos/cabolabs-ehrserver"
   },
   {
     "file": "teaching-edge-cases.opt",
     "label": "Teaching edge cases (synthetic)",
-    "note": "Synthetic: FHIR ValueSet/ECL constraint, removed node, renamed clones, path-based binding, ordinal, partly bound list."
+    "note": "Synthetic: FHIR ValueSet/ECL constraint, removed node, renamed clones, path-based binding, ordinal, partly bound list.",
+    "source": "Synthetic, generated for this demonstrator",
+    "licence": "Apache-2.0"
   }
 ]

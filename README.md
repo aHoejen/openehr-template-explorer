@@ -23,13 +23,14 @@ Each example is a walkthrough:
 - a **list of data items** with a traffic-light icon each;
 - for the selected item, a **three-step journey**: *1 Recorded in openEHR* → *2 Meaning in SNOMED CT* → *3 Sent in FHIR*. It gives the plain value at each step, a "why this matters" note, and JSON and technical details (paths, code sources, *open in the template explorer*) on request;
 - a **live SNOMED CT check** of each concept (FSN, active status, edition) on a configurable FHIR terminology server. The default is `https://implementation-demo.snomedtools.org/snowstorm-lite/fhir`;
+- a **Sources** list naming where everything comes from: the template and archetypes (CKM or another repository, with licence), the openEHR specifications, the FHIR profiles, SNOMED CT and LOINC. It also states that the mapping was written for this demonstrator;
 - optionally, the **complete records side by side** (openEHR JSON, codes, FHIR JSON), highlighting the selected item.
 
 The examples live in `src/examples/*.js`. `test/examples.test.js` checks each one against its real template: every path exists, every local code is allowed, every "archetype binding" really is one, and every code appears in the linked FHIR element. The SNOMED CT codes were checked as active in the 2026-01-01 International Edition when written. The mappings are hand-written for teaching. openEHR has no single standard mapping to FHIR.
 
 ## Template explorer
 
-Open an openEHR **Operational Template (OPT 1.4 XML)** to see:
+Open an openEHR **Operational Template (OPT 1.4 XML)** to see the following. For the bundled samples, the header shows each template's source and licence:
 
 1. **The node tree:** COMPOSITION → SECTION → ENTRY → CLUSTER → ELEMENT. Each node shows its RM type, at-code, archetype id (at archetype roots), name and occurrences.
 2. **Data values for each ELEMENT:** the data type (DV_QUANTITY, DV_CODED_TEXT, DV_ORDINAL, …), units, ranges and precision. Also the **allowed coded values**: local at-codes with their text, an external code list, or an external value-set reference (`referenceSetUri`, including FHIR `ValueSet/$expand` URLs with ECL).
