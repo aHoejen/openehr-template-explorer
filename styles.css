@@ -787,3 +787,45 @@ a { color: var(--accent); }
 .fm-card .fm-kind .material-symbols-outlined { font-size: 18px; color: var(--accent); }
 .flow-step-links { margin: 6px 0 0; padding-left: 18px; }
 .flow-step-links li { margin: 3px 0; }
+
+/* icons and the SNOMED CT band on the front page */
+.fm-card { display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 10px; align-content: start; }
+.fm-card > :not(.fm-icon) { grid-column: 2; }
+.fm-icon {
+  grid-row: 1 / span 3; align-self: center; width: 40px; height: 40px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 22px !important;
+  color: var(--c-openehr) !important; background: color-mix(in srgb, var(--c-openehr) 12%, transparent);
+}
+.fm-inst .fm-icon { color: var(--surface) !important; background: var(--c-openehr); }
+.fm-msg .fm-icon { color: var(--c-fhir) !important; background: color-mix(in srgb, var(--c-fhir) 12%, transparent); }
+
+.fm-thread {
+  all: unset; box-sizing: border-box; cursor: pointer; width: 100%; margin: -6px 0 22px;
+  display: flex; align-items: center; gap: 12px; padding: 6px 12px; border-radius: 4px; font-size: 13px;
+  border: 1px solid color-mix(in srgb, var(--c-sct) 45%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c-sct) 12%, transparent), color-mix(in srgb, var(--c-sct) 4%, transparent));
+}
+.fm-thread:hover { background: color-mix(in srgb, var(--c-sct) 16%, transparent); }
+.fm-thread:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fm-thread-pill {
+  flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px 2px 6px; border-radius: 14px;
+  background: var(--c-sct); color: var(--surface); font-weight: 700; font-size: 12.5px;
+}
+.fm-thread-pill .material-symbols-outlined { font-size: 18px; }
+.fm-thread-text { flex: 1; color: var(--text); }
+.fm-thread-info { font-size: 18px; color: var(--accent); }
+
+.sc-head { display: flex; align-items: center; gap: 12px; }
+.sc-head h3 { margin: 0; }
+.sc-icon {
+  flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 26px;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.scenario-title { align-items: center; }
+.scenario-title .sc-icon { width: 36px; height: 36px; font-size: 22px; }
+@media (max-width: 640px) {
+  .fm-thread { flex-wrap: wrap; gap: 6px 10px; }
+  .fm-card { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+  .fm-card > :not(.fm-icon) { grid-column: 1; }
+  .fm-icon { grid-row: auto; align-self: start; width: 32px; height: 32px; font-size: 19px !important; margin-bottom: 2px; }
+}

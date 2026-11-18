@@ -73,7 +73,7 @@ let openInExplorer = () => {};
 
 export function initExamples(opts) {
   openInExplorer = opts.openInExplorer;
-  for (const b of document.querySelectorAll(".fm-card")) {
+  for (const b of document.querySelectorAll(".fm-card, .fm-thread")) {
     b.addEventListener("click", () => openInfo(b, FLOW_STEPS[b.dataset.step].title, flowStepInfo(b.dataset.step)));
   }
   const input = $("#tx-server");
@@ -128,6 +128,10 @@ function readServer() {
 const outcomeOf = (l) => HOW[l.how].outcome;
 const visibleLinks = () => current.links.filter((l) => !filter || outcomeOf(l) === filter);
 
+/** A Material Symbols icon for each scenario. */
+const SCENARIO_ICON = { "vital-signs": "monitor_heart", diagnosis: "stethoscope", allergy: "allergy" };
+const scenarioIcon = (ex) => h("span.sc-icon.material-symbols-outlined", { "aria-hidden": "true" }, SCENARIO_ICON[ex.id] || "assignment");
+
 /** The four steps of the "From definition to message" strip on the scenarios home. */
 const FLOW_STEPS = {
   archetypes: {
@@ -155,6 +159,15 @@ const FLOW_STEPS = {
       "Each recorded item keeps its archetype path, and coded values keep their codes. That is what lets the meaning travel on. The clinical scenarios show recorded instances.",
     ],
     links: (ex) => ({ href: `#example=${ex.id}`, text: `Scenario ${ex.scenario.number}: ${ex.title}` }),
+  },
+  snomed: {
+    title: "SNOMED CT: the meaning, from recording to exchange",
+    text: [
+      "SNOMED CT is the clinical terminology that keeps the meaning of the data the same in every step. Archetypes bind their items and values to SNOMED CT concepts, recorded values can carry SNOMED CT codes, and the FHIR message sends them as codings.",
+      "Where a step has no SNOMED CT code, for example free text or a local code without a binding, the meaning has to be added by a mapping decision or is weakened. Each scenario shows where that happens.",
+    ],
+    links: (ex) => ({ href: `#example=${ex.id}`, text: `Follow the SNOMED CT codes in ${ex.title.toLowerCase()}` }),
+    extra: { href: "https://browser.ihtsdotools.org/", text: "Look up concepts in the SNOMED CT browser", external: true },
   },
   fhir: {
     title: "FHIR message: the same data, sent on",
@@ -191,8 +204,7 @@ export function showScenarios() {
       });
       return h(
         "article.scenario-card",
-        h("p.sc-number", `Scenario ${ex.scenario.number}`),
-        h("h3", ex.title),
+        h("div.sc-head", scenarioIcon(ex), h("div", h("p.sc-number", `Scenario ${ex.scenario.number}`), h("h3", ex.title))),
         h("p.sc-summary", ex.scenario.summary),
         h("p.sc-meta", ex.scenario.setting),
         h(
@@ -238,7 +250,7 @@ export function showExample(id) {
 
   const idx = EXAMPLES.findIndex((e) => e.id === current.id);
   const next = EXAMPLES[(idx + 1) % EXAMPLES.length];
-  fill($("#scenario-title"), h("span.sc-number", `Scenario ${current.scenario.number} of ${EXAMPLES.length}`), " ", current.title);
+  fill($("#scenario-title"), scenarioIcon(current), h("span.sc-number", `Scenario ${current.scenario.number} of ${EXAMPLES.length}`), " ", current.title);
   const nextLink = $("#next-scenario");
   nextLink.href = `#example=${next.id}`;
   nextLink.textContent = `Next scenario: ${next.title} →`;
