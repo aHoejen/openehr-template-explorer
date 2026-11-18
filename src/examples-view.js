@@ -465,8 +465,9 @@ function renderJourney() {
           ? sentAsTextOnly(l)
             ? h("p.no-code", h("strong", "No SNOMED CT code is recorded or sent."), " Only the words travel; a receiving system has to guess what they mean.")
             : h("p.no-code", h("strong", "No SNOMED CT code is recorded."), " FHIR needs one of its own codes here, so the words have to be interpreted to choose it.")
-          : h("p.step-value.muted", "No SNOMED CT concept for this item."),
-    other.length ? h("div.other-codes", h("p.step-note", "Other codes involved:"), other.map((t) => conceptCard(t, false))) : null,
+          : other.some((t) => t.system === "FHIR")
+            ? h("p.step-value.muted", "No SNOMED CT concept is used here. FHIR uses one of its own codes instead (see step 3).")
+            : h("p.step-value.muted", "No SNOMED CT concept for this item."),
     couldHave.length
       ? h(
           "div.could-have",
@@ -482,6 +483,13 @@ function renderJourney() {
     "div.step.s-fhir",
     h("div.step-head", h("span.step-no", "3"), h("div", h("h4", "Sent in FHIR"), h("p.step-sub", "the message"))),
     l.fhir ? [h("p.step-value", sentValue(l, fhirPtrs)), h("p.step-note", "as ", h("code", l.fhir)), fhirTextNote(l, fhirPtrs)] : h("p.step-value", "Not sent"),
+    l.fhir && other.length
+      ? h(
+          "div.other-codes",
+          h("p.step-note", sct.length ? "Sent together with the SNOMED CT code:" : "Code in the message:"),
+          other.map((t) => conceptCard(t, false)),
+        )
+      : null,
     fhirPtrs.length ? snippet(current.fhirJson, fhirPtrs, "FHIR") : null,
   );
 
@@ -605,7 +613,7 @@ function conceptCard(t, live, notUsed = false) {
     "div.concept.inline" + (notUsed ? ".not-used" : ""),
     notUsed ? h("span.not-used-tag", "not in the record · not sent") : null,
     h("div.concept-head", h("span.pill." + cls, t.system === "SNOMED CT" ? "SCT" : t.system), " ", codeLink(t)),
-    h("div.concept-name", t.display),
+    h("div.concept-name", t.system === "FHIR" ? `from FHIR code system “${t.display}”` : t.display),
     notUsed ? null : h("div.concept-src", SOURCE_TEXT[t.source] || t.source),
     live ? status : null,
   );
