@@ -411,7 +411,7 @@ function reasonFor(l) {
         ? `${cap(arch)} uses local codes (at-codes) for ${item} and has no SNOMED CT binding for them. To send it in FHIR, someone had to choose a SNOMED CT concept. Another system could choose a different one.`
         : `${cap(arch)} has no terminology binding for ${item}. The mapping supplies the codes for the FHIR message. Another system could choose different ones.`;
     case "text":
-      return `${cap(templateName())} only allows free text for ${item}. The FHIR message can carry the words, but not a reliable code.`;
+      return `${cap(templateName())} only allows free text for ${item}, so the record holds just the words, with no SNOMED CT code. The FHIR message can pass on the words, but not a reliable code.`;
     case "none":
       return `FHIR ${fhirResourceType()} has no standard element for ${item}. The value stays in the openEHR record and is not sent.`;
     default:
@@ -441,8 +441,10 @@ function renderJourney() {
   const l = current.links.find((x) => x.id === selected);
   if (!l) return fill(box, h("p.muted", "No items match this filter."));
   const k = HOW[l.how].outcome;
-  const sct = l.terms.filter((t) => t.system === "SNOMED CT");
-  const other = l.terms.filter((t) => t.system !== "SNOMED CT");
+  const notUsed = (t) => t.source === "possible, not recorded";
+  const sct = l.terms.filter((t) => t.system === "SNOMED CT" && !notUsed(t));
+  const other = l.terms.filter((t) => t.system !== "SNOMED CT" && !notUsed(t));
+  const couldHave = l.terms.filter(notUsed);
 
   const step1 = h(
     "div.step.s-openehr",
@@ -457,15 +459,29 @@ function renderJourney() {
     h("div.step-head", h("span.step-no", "2"), h("div", h("h4", "Meaning in SNOMED CT"), h("p.step-sub", "what it means"))),
     sct.length
       ? sct.map((t) => conceptCard(t, true))
-      : h("p.step-value.muted", l.how === "direct" ? "Not needed: a date or a group carries no coded meaning." : "No SNOMED CT concept for this item."),
+      : l.how === "direct"
+        ? h("p.step-value.muted", "Not needed: a date or a group carries no coded meaning.")
+        : l.how === "text"
+          ? sentAsTextOnly(l)
+            ? h("p.no-code", h("strong", "No SNOMED CT code is recorded or sent."), " Only the words travel; a receiving system has to guess what they mean.")
+            : h("p.no-code", h("strong", "No SNOMED CT code is recorded."), " FHIR needs one of its own codes here, so the words have to be interpreted to choose it.")
+          : h("p.step-value.muted", "No SNOMED CT concept for this item."),
     other.length ? h("div.other-codes", h("p.step-note", "Other codes involved:"), other.map((t) => conceptCard(t, false))) : null,
+    couldHave.length
+      ? h(
+          "div.could-have",
+          h("p.could-have-head", "Could have been used, but was not"),
+          h("p.step-note", "If the template had offered a coded list here, this concept could have carried the meaning:"),
+          couldHave.map((t) => conceptCard(t, true, true)),
+        )
+      : null,
   );
 
   const fhirPtrs = current.fhirPointers.get(l.id) || [];
   const step3 = h(
     "div.step.s-fhir",
     h("div.step-head", h("span.step-no", "3"), h("div", h("h4", "Sent in FHIR"), h("p.step-sub", "the message"))),
-    l.fhir ? [h("p.step-value", fhirSummary(fhirPtrs) || "–"), h("p.step-note", "as ", h("code", l.fhir))] : h("p.step-value", "Not sent"),
+    l.fhir ? [h("p.step-value", sentValue(l, fhirPtrs)), h("p.step-note", "as ", h("code", l.fhir)), fhirTextNote(l, fhirPtrs)] : h("p.step-value", "Not sent"),
     fhirPtrs.length ? snippet(current.fhirJson, fhirPtrs, "FHIR") : null,
   );
 
@@ -499,6 +515,30 @@ function renderJourney() {
 
 function arrow(outcome) {
   return h("div.arrow.o-" + outcome, { "aria-hidden": "true" }, h("span", "→"));
+}
+
+/** True when FHIR receives only text (a CodeableConcept with text and no coding). */
+function sentAsTextOnly(l) {
+  const pointers = current.fhirPointers.get(l.id) || [];
+  if (l.how !== "text" || !pointers.length) return false;
+  return pointers.every((p) => {
+    const v = resolvePointer(current.fhirJson, p);
+    return v && typeof v === "object" && !Array.isArray(v) && !v.coding;
+  });
+}
+
+/** The value FHIR carries; free text that is sent without a code is shown in quotes. */
+function sentValue(l, pointers) {
+  const v = fhirSummary(pointers) || "–";
+  return sentAsTextOnly(l) ? `“${v}”` : v;
+}
+
+/** For free-text items: say plainly whether FHIR gets only text, or a code guessed from the text. */
+function fhirTextNote(l, pointers) {
+  if (l.how !== "text") return null;
+  return sentAsTextOnly(l)
+    ? h("p.no-code", h("strong", "Sent as unstructured text, with no code."), " SNOMED CT is not used in the message.")
+    : h("p.no-code", h("strong", "Sent as a code, but only by interpreting the free text."), " A different spelling or wording could map wrongly or not at all.");
 }
 
 /** Plain-language summary of what the FHIR side carries: "148 mmHg", "Sitting position", "high". */
@@ -558,14 +598,15 @@ function trim(v, depth = 0) {
   return v;
 }
 
-function conceptCard(t, live) {
+function conceptCard(t, live, notUsed = false) {
   const cls = t.system === "SNOMED CT" ? "sct" : t.system === "LOINC" ? "loinc" : "other";
   const status = h("div.live");
   const card = h(
-    "div.concept.inline",
+    "div.concept.inline" + (notUsed ? ".not-used" : ""),
+    notUsed ? h("span.not-used-tag", "not in the record · not sent") : null,
     h("div.concept-head", h("span.pill." + cls, t.system === "SNOMED CT" ? "SCT" : t.system), " ", codeLink(t)),
     h("div.concept-name", t.display),
-    h("div.concept-src", SOURCE_TEXT[t.source] || t.source),
+    notUsed ? null : h("div.concept-src", SOURCE_TEXT[t.source] || t.source),
     live ? status : null,
   );
   if (live) lookup(t.code, status);
@@ -596,7 +637,9 @@ function renderConcepts() {
         h("div.concept-head", h("span.pill." + cls, t.system === "SNOMED CT" ? "SCT" : t.system), " ", codeLink(t)),
         h("div.concept-name", t.display),
         live,
-        h("div.concept-uses", "Used for: ", t.links.map((l) => l.label).join(", ")),
+        t.source === "possible, not recorded"
+          ? h("div.concept-uses", "Not used: could have coded ", t.links.map((l) => l.label).join(", "), ", which was recorded as free text")
+          : h("div.concept-uses", "Used for: ", t.links.map((l) => l.label).join(", ")),
       );
       if (t.system === "SNOMED CT") lookup(t.code, live);
       return card;

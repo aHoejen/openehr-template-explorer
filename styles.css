@@ -469,3 +469,12 @@ table.mini th { font-weight: 600; color: var(--muted); font-size: 11.5px; }
 .ctx-source { font-size: 12px; }
 .tpl-source { font-size: 12px; }
 @media (max-width: 760px) { .sources li { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------------------------------------------------------------- free text: no code sent */
+.no-code { margin: 6px 0; padding: 6px 8px; border-radius: 6px; background: var(--o-lost-bg); color: var(--text); font-size: 12.5px; }
+.no-code strong { color: var(--o-lost); }
+.could-have { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.could-have-head { margin: 0 0 2px; font-weight: 600; font-size: 12.5px; color: var(--muted); }
+.concept.not-used { border-style: dashed; background: transparent; opacity: 0.85; }
+.concept.not-used .concept-name { font-weight: 500; color: var(--muted); }
+.not-used-tag { display: inline-block; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--o-lost); margin-bottom: 2px; }
