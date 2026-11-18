@@ -13,9 +13,13 @@
   <header class="topbar">
     <div class="brand">
       <h1>openEHR Template Explorer</h1>
-      <p class="tagline">Look inside an Operational Template: its nodes, data types, coded values and terminology bindings.</p>
+      <p class="tagline">How openEHR, SNOMED CT and FHIR fit together, from recording to exchange.</p>
     </div>
-    <div class="loaders">
+    <nav class="modes" aria-label="Mode">
+      <a href="#example=vital-signs" id="mode-link-examples">Worked examples</a>
+      <a href="#explore" id="mode-link-explore">Template explorer</a>
+    </nav>
+    <div class="loaders" id="loaders">
       <label class="btn primary" for="file-input">Open OPT file…</label>
       <input id="file-input" type="file" accept=".opt,.xml,application/xml,text/xml" hidden>
       <label class="sample-picker">
@@ -28,6 +32,80 @@
   </header>
 
   <main id="main">
+    <section id="mode-examples" hidden>
+      <div class="layers" aria-label="The three standards">
+        <div class="layer l-openehr">
+          <h2>openEHR</h2>
+          <p class="layer-role">the EHR</p>
+          <p>How data is recorded and kept. Archetypes define clinical concepts; templates combine them for one use.</p>
+        </div>
+        <div class="layer l-fhir">
+          <h2>FHIR</h2>
+          <p class="layer-role">the message</p>
+          <p>How a template's data is exchanged. Each resource has its own structure, shaped by profiles such as vital signs or IPS.</p>
+        </div>
+        <div class="layer l-sct">
+          <h2>SNOMED CT</h2>
+          <p class="layer-role">the meaning</p>
+          <p>Keeps the meaning the same from recording to exchange, through bindings, coded values and value sets.</p>
+        </div>
+      </div>
+
+      <nav id="example-tabs" class="example-tabs" role="tablist" aria-label="Examples"></nav>
+      <p id="example-story" class="story"></p>
+
+      <section class="mapping" aria-labelledby="mapping-h">
+        <h3 id="mapping-h">How each item travels <span class="muted">Click a row, or any highlighted part of the JSON</span></h3>
+        <div class="table-wrap">
+          <table class="mapping-table">
+            <thead>
+              <tr><th>Data item</th><th>openEHR: recorded value and path</th><th>Codes</th><th>FHIR element</th><th>How the meaning travels</th></tr>
+            </thead>
+            <tbody id="mapping-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="three">
+        <section class="pane">
+          <h3><span class="dot d-openehr"></span>openEHR data</h3>
+          <p id="openehr-title" class="pane-sub"></p>
+          <div id="openehr-json" class="scroll"></div>
+        </section>
+        <section class="pane">
+          <h3><span class="dot d-sct"></span>Codes and their meaning</h3>
+          <p class="pane-sub">SNOMED CT concepts checked live on the terminology server</p>
+          <div id="concepts" class="scroll concepts"></div>
+          <form id="tx-form" class="tx-form">
+            <label for="tx-server">Terminology server (FHIR)</label>
+            <div class="tx-row">
+              <input id="tx-server" type="url" spellcheck="false">
+              <button class="btn small" type="submit">Use</button>
+              <button class="btn small" type="button" id="tx-reset">Default</button>
+            </div>
+          </form>
+        </section>
+        <section class="pane">
+          <h3><span class="dot d-fhir"></span>FHIR message</h3>
+          <p id="fhir-title" class="pane-sub"></p>
+          <div id="fhir-json" class="scroll"></div>
+        </section>
+      </div>
+
+      <div class="takeaways">
+        <section>
+          <h3>What this example shows</h3>
+          <ul id="example-points"></ul>
+        </section>
+        <section>
+          <h3>How meaning can travel</h3>
+          <ul id="legend" class="legend"></ul>
+        </section>
+      </div>
+      <p class="muted small-print">The openEHR JSON is abridged canonical JSON: language, encoding and most archetype details are left out for readability. FHIR examples use R4. The mappings are written by hand for teaching. openEHR has no single standard mapping to FHIR; real projects use mapping engines and agreed mapping specifications.</p>
+    </section>
+
+    <section id="mode-explore" hidden>
     <section id="welcome" class="welcome">
       <div class="dropzone" id="dropzone">
         <p class="drop-title">Drop an OPT 1.4 XML file here</p>
@@ -90,10 +168,11 @@
     </section>
 
     <div id="error" class="error" role="alert" hidden></div>
+    </section>
   </main>
 
   <footer class="footer">
-    <p>Static demonstrator for openEHR + SNOMED CT training. OPT 1.4 XML only.
+    <p>Teaching demonstrator for openEHR, SNOMED CT and FHIR. The template explorer reads OPT 1.4 XML.
       SNOMED CT codes are shown for education; using SNOMED CT needs an Affiliate or national licence.</p>
   </footer>
   <div id="toast" class="toast" role="status" hidden></div>

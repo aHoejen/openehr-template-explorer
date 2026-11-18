@@ -10,6 +10,16 @@
     "note": "The openEHR CKM 'Vital signs' template: lean, one data point per archetype, many archetype bindings not used in the template."
   },
   {
+    "file": "ips-problem-list.opt",
+    "label": "IPS Problem List (CKM)",
+    "note": "International Patient Summary problem list: problem/diagnosis constrained to the IPS FHIR 'problems' value set."
+  },
+  {
+    "file": "ips-allergies-and-intolerances.opt",
+    "label": "IPS Allergies and Intolerances (CKM)",
+    "note": "International Patient Summary allergies: substance and manifestation constrained to IPS FHIR value sets; no archetype bindings."
+  },
+  {
     "file": "ehrn-vital-signs.opt",
     "label": "EHRN Vital signs (EHRbase)",
     "note": "Archetypes nested in a SECTION, bindings written as [SNOMED-CT(2003)::code]."

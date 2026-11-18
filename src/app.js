@@ -1,5 +1,6 @@
 // UI for the openEHR Template Explorer. No framework, no build step.
 import { parseOpt, formatOccurrences, formatRange, bindingsToCsv, aqlFor } from "./opt-parser.js";
+import { initExamples, showExample } from "./examples-view.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -52,31 +53,74 @@ const state = {
 
 // ------------------------------------------------------------------ loading
 
+let sampleList = [];
+let loadedSample = null;
+
 async function loadSamples() {
   try {
     const res = await fetch("samples/index.json");
-    const list = await res.json();
+    sampleList = await res.json();
     const sel = $("#sample-select");
-    for (const s of list) sel.append(h("option", { value: s.file, title: s.note }, s.label));
-    sel.addEventListener("change", async () => {
-      if (!sel.value) return;
-      const r = await fetch(`samples/${encodeURIComponent(sel.value)}`);
-      if (!r.ok) return showError(`Could not load sample (${r.status}).`);
-      history.replaceState(null, "", `#sample=${encodeURIComponent(sel.value)}`);
-      load(await r.text(), sel.value);
+    for (const s of sampleList) sel.append(h("option", { value: s.file, title: s.note }, s.label));
+    sel.addEventListener("change", () => {
+      if (sel.value) location.hash = `sample=${encodeURIComponent(sel.value)}`;
     });
-    const fromHash = () => {
-      const want = new URLSearchParams(location.hash.slice(1)).get("sample");
-      if (want && want !== sel.value && list.some((s) => s.file === want)) {
-        sel.value = want;
-        sel.dispatchEvent(new Event("change"));
-      }
-    };
-    window.addEventListener("hashchange", fromHash);
-    fromHash();
   } catch {
     $("#sample-select").closest("label").hidden = true; // e.g. opened from file:// without a server
   }
+}
+
+async function loadSample(file) {
+  if (loadedSample === file && state.t) return true;
+  const r = await fetch(`samples/${encodeURIComponent(file)}`);
+  if (!r.ok) {
+    showError(`Could not load sample (${r.status}).`);
+    return false;
+  }
+  $("#sample-select").value = file;
+  load(await r.text(), file);
+  loadedSample = file;
+  return true;
+}
+
+// ------------------------------------------------------------------ modes and routing
+
+function setMode(mode) {
+  $("#mode-examples").hidden = mode !== "examples";
+  $("#mode-explore").hidden = mode !== "explore";
+  $("#loaders").hidden = mode !== "explore";
+  $("#mode-link-examples").setAttribute("aria-current", String(mode === "examples"));
+  $("#mode-link-explore").setAttribute("aria-current", String(mode === "explore"));
+  if (mode === "examples") document.title = "openEHR, SNOMED CT and FHIR: worked examples";
+  else if (state.t) document.title = `${state.t.concept || state.t.templateId} – openEHR Template Explorer`;
+  else document.title = "openEHR Template Explorer";
+}
+
+async function route() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  const sample = params.get("sample");
+  if (sample && sampleList.some((s) => s.file === sample)) {
+    setMode("explore");
+    await loadSample(sample);
+  } else if (params.has("explore") || params.has("sample")) {
+    setMode("explore");
+  } else {
+    setMode("examples");
+    showExample(params.get("example"));
+  }
+}
+
+/** Called from a worked example: open its template and select one node. */
+async function openInExplorer(file, archetypeId, path) {
+  history.pushState(null, "", `#sample=${encodeURIComponent(file)}`);
+  setMode("explore");
+  if (!(await loadSample(file))) return;
+  const node = state.t.nodes.find((n) => n.archetypeRootId === archetypeId && n.archetypePath === path);
+  if (node) {
+    setFilter(null);
+    select(node.id);
+  }
+  window.scrollTo(0, 0);
 }
 
 function load(xml, sourceName) {
@@ -670,8 +714,10 @@ function wire() {
   $("#file-input").addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (file) {
-      history.replaceState(null, "", location.pathname);
+      history.replaceState(null, "", "#explore");
       $("#sample-select").value = "";
+      loadedSample = null;
+      setMode("explore");
       load(await file.text(), file.name);
     }
     e.target.value = "";
@@ -693,8 +739,10 @@ function wire() {
     document.body.classList.remove("dragging");
     const file = e.dataTransfer.files[0];
     if (file) {
-      history.replaceState(null, "", location.pathname);
+      history.replaceState(null, "", "#explore");
       $("#sample-select").value = "";
+      loadedSample = null;
+      setMode("explore");
       load(await file.text(), file.name);
     }
   });
@@ -733,7 +781,9 @@ function wire() {
 }
 
 wire();
-loadSamples();
+initExamples({ openInExplorer });
+window.addEventListener("hashchange", route);
+loadSamples().then(route);
 
 // Exposed for debugging in the console.
 window.templateExplorer = { state, load };

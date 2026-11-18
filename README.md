@@ -1,6 +1,33 @@
 # openEHR Template Explorer
 
-A small, static web demonstrator for training on **SNOMED CT and openEHR**.
+A static web demonstrator for teaching how **openEHR, FHIR and SNOMED CT** fit together:
+
+- **openEHR**: the EHR, where data is recorded and kept.
+- **FHIR**: the message, the exchange structure for a specific template's data.
+- **SNOMED CT**: the meaning, kept the same from recording to exchange.
+
+It has two modes.
+
+## Worked examples
+
+Three worked examples, each following real data from openEHR to FHIR:
+
+| Example | openEHR template | FHIR |
+|---|---|---|
+| Vital signs | Vital signs monitoring (blood pressure, pulse, respiration, temperature, SpO₂) | Bundle of 5 Observations, R4 vital-signs profiles |
+| Diagnosis | IPS Problem List (CKM) | Condition, IPS profile |
+| Allergy | IPS Allergies and Intolerances (CKM) | AllergyIntolerance, IPS profile |
+
+Each example shows:
+- a **mapping table**: each data item, its openEHR path and recorded value, its codes, its FHIR element, and *how the meaning travels* (bound in the archetype, SNOMED CT recorded as the value, mapped by the integration, FHIR's own code, free text only, or no place in FHIR);
+- three **linked panels**: openEHR canonical JSON (abridged), SNOMED CT/LOINC codes, and FHIR JSON. Clicking a row or a highlighted part of the JSON highlights the same item in all three;
+- a **live SNOMED CT check** of every concept (FSN, active status, edition) on a configurable FHIR terminology server. The default is `https://implementation-demo.snomedtools.org/snowstorm-lite/fhir`;
+- a button that opens the node in the template explorer.
+
+The examples live in `src/examples/*.js`. `test/examples.test.js` checks each one against its real template: every path exists, every local code is allowed, every "archetype binding" really is one, and every code appears in the linked FHIR element. The SNOMED CT codes were checked as active in the 2026-01-01 International Edition when written. The mappings are hand-written for teaching. openEHR has no single standard mapping to FHIR.
+
+## Template explorer
+
 Open an openEHR **Operational Template (OPT 1.4 XML)** to see:
 
 1. **The node tree:** COMPOSITION → SECTION → ENTRY → CLUSTER → ELEMENT. Each node shows its RM type, at-code, archetype id (at archetype roots), name and occurrences.
@@ -24,8 +51,8 @@ It is a static site with no build step. ES modules need an HTTP server, so `file
 python3 -m http.server 8080
 ```
 
-Then open <http://localhost:8080>. Pick a sample from the menu, or drop your own `.opt` file onto the page.
-A sample can be linked directly, for example `http://localhost:8080/#sample=vital-signs-monitoring.opt`.
+Then open <http://localhost:8080>. The worked examples open first. *Template explorer* lets you pick a sample or drop your own `.opt` file.
+You can link straight to a view: `#example=vital-signs`, `#example=diagnosis`, `#example=allergy`, or `#sample=vital-signs-monitoring.opt`.
 
 `npm start` does the same with `npx serve`.
 
@@ -77,7 +104,10 @@ They also cover the edge cases in the synthetic `teaching-edge-cases.opt`.
 index.html            page shell
 styles.css            styles (light and dark)
 src/opt-parser.js     OPT 1.4 parser + CSV/AQL helpers (browser + Node)
-src/app.js            UI: tree, detail panel, bindings table, CSV export
+src/app.js            UI: modes/routing, tree, detail panel, bindings table, CSV export
+src/examples-view.js  worked examples: mapping table, linked JSON panels, live SNOMED CT lookup
+src/examples/         the three examples (openEHR instance, FHIR resource, links) + RM/FHIR builders
+src/json-view.js      JSON renderer with linkable nodes
 src/openehr-terms.js  generated openEHR terminology rubrics
 samples/              sample OPTs (see samples/SOURCES.md)
 scripts/              generators for openehr-terms.js and the synthetic sample
