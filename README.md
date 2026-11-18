@@ -18,11 +18,12 @@ Three worked examples, each following real data from openEHR to FHIR:
 | Diagnosis | IPS Problem List (CKM) | Condition, IPS profile |
 | Allergy | IPS Allergies and Intolerances (CKM) | AllergyIntolerance, IPS profile |
 
-Each example shows:
-- a **mapping table**: each data item, its openEHR path and recorded value, its codes, its FHIR element, and *how the meaning travels* (bound in the archetype, SNOMED CT recorded as the value, mapped by the integration, FHIR's own code, free text only, or no place in FHIR);
-- three **linked panels**: openEHR canonical JSON (abridged), SNOMED CT/LOINC codes, and FHIR JSON. Clicking a row or a highlighted part of the JSON highlights the same item in all three;
-- a **live SNOMED CT check** of every concept (FSN, active status, edition) on a configurable FHIR terminology server. The default is `https://implementation-demo.snomedtools.org/snowstorm-lite/fhir`;
-- a button that opens the node in the template explorer.
+Each example is a walkthrough:
+- a **summary** of how many items keep their meaning, in four plain-language outcomes: *meaning kept automatically*, *translated by a simple rule*, *needs a mapping decision*, *meaning lost or weakened*. Click an outcome to filter;
+- a **list of data items** with a traffic-light icon each;
+- for the selected item, a **three-step journey**: *1 Recorded in openEHR* → *2 Meaning in SNOMED CT* → *3 Sent in FHIR*. It gives the plain value at each step, a "why this matters" note, and JSON and technical details (paths, code sources, *open in the template explorer*) on request;
+- a **live SNOMED CT check** of each concept (FSN, active status, edition) on a configurable FHIR terminology server. The default is `https://implementation-demo.snomedtools.org/snowstorm-lite/fhir`;
+- optionally, the **complete records side by side** (openEHR JSON, codes, FHIR JSON), highlighting the selected item.
 
 The examples live in `src/examples/*.js`. `test/examples.test.js` checks each one against its real template: every path exists, every local code is allowed, every "archetype binding" really is one, and every code appears in the linked FHIR element. The SNOMED CT codes were checked as active in the 2026-01-01 International Edition when written. The mappings are hand-written for teaching. openEHR has no single standard mapping to FHIR.
 
